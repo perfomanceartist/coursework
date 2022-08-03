@@ -14,15 +14,15 @@ int num;
 char letter;
 }
 
-%token END_OF_FILE IDENTIFICATOR COLON_EQ 
+%token END_OF_FILE IDENTIFICATOR COLON_EQ DOT_DOT_DOT 
 %token STRING INTEGER FLOAT TRUE_FALSE COMPLEX
-%token CONST_KEYWORD PACKAGE_KEYWORD IMPORT_KEYWORD VAR_KEYWORD TYPE_KEYWORD
+%token CONST_KEYWORD PACKAGE_KEYWORD IMPORT_KEYWORD VAR_KEYWORD TYPE_KEYWORD FUNC_KEYWORD
 
 
 
 %%
 
-S : PACKAGE COMMANDS 
+S : PACKAGE FUNCTIONS 
   
   ;
 
@@ -30,7 +30,7 @@ PACKAGE : PACKAGE_KEYWORD IDENTIFICATOR '\n'  { printf("Package declaration\n");
   ;
 
 IMPORT : IMPORT_KEYWORD STRING '\n'  { printf("Module imported\n"); }
-  | IMPORT_KEYWORD '(' IMPORT_MULTIPLE_STRING ')' '\n' { printf("Importing modules with brackets\n"); }
+  | IMPORT_KEYWORD '(' '\n' IMPORT_MULTIPLE_STRING ')' '\n' { printf("Importing modules with brackets\n"); }
   ;
 
 
@@ -39,6 +39,30 @@ IMPORT_MULTIPLE_STRING :   STRING '\n' IMPORT_MULTIPLE_STRING { printf("Module n
   |
   ;
 
+
+FUNCTIONS : FUNCTION '\n' FUNCTIONS
+  |
+  ;
+
+FUNCTION : FUNC_KEYWORD IDENTIFICATOR '(' FUNC_PARAMS ')'  '{' '}' { printf("Function declaration\n"); }
+  ;
+
+FUNC_PARAMETER_GROUP :  MULTIPLE_IDENT TYPE { printf("Group of parameters\n"); }
+  | IDENTIFICATOR DOT_DOT_DOT TYPE { printf("Dot dot dot parameter\n"); }
+  ;
+FUNC_PARAMS : FUNC_PARAMETER_GROUP 
+  | FUNC_PARAMS ',' FUNC_PARAMETER_GROUP
+  | 
+  ;
+
+FUNC_RESULT : TYPE
+  | '(' IDENTIFICATOR TYPE ')'
+  ;
+
+FUNC_RESULT_TYPES : TYPE ',' FUNC_RESULT_TYPES
+  | TYPE
+  | 
+  ;
 
 COMMANDS: COMMANDS VAR_KEYWORD VARIABLE_DECLARATION 
   | COMMANDS VAR_KEYWORD VARIABLE_DECLARATION_ASSIGNMENT  { printf("Declaration (with assignment) of variable\n"); }
@@ -95,6 +119,8 @@ MULTIPLE_IDENT: IDENTIFICATOR
 
 
 %%
+
+
 
 void yyerror(char * msg) {
 fprintf(stderr, "%s\n",  msg);

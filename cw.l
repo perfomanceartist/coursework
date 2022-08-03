@@ -33,10 +33,12 @@
 
 %%
 [/][/].*    {  ;					}
-<<EOF>>     return END_OF_FILE ;
+<<EOF>>     { return END_OF_FILE ; }
+
 
 package 	{ return PACKAGE_KEYWORD; }
 import 		{ return IMPORT_KEYWORD;  }
+func		{ return FUNC_KEYWORD; }
 
 var 		{ return VAR_KEYWORD;	}
 int8		{ return TYPE_KEYWORD; }
@@ -71,9 +73,9 @@ false		{ return TRUE_FALSE;   }
 := return COLON_EQ;
 [A-Za-z_]+[A-Za-z_0-9]* { return IDENTIFICATOR;		}
 
+"..."		{ return DOT_DOT_DOT; }
 
-
-[-+()\*=\.,] { return yytext[0];		}
+[-+()\*=\.,\{\}] { return yytext[0];		}
 [ \t\f\v] 	{ ; 					}
 "\n"		{  return yytext[0];	}
 
