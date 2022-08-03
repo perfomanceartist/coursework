@@ -17,8 +17,11 @@ char letter;
 %token  IDENTIFICATOR COLON_EQ DOT_DOT_DOT 
 %token STRING INTEGER FLOAT TRUE_FALSE COMPLEX
 %token CONST_KEYWORD PACKAGE_KEYWORD IMPORT_KEYWORD VAR_KEYWORD TYPE_KEYWORD FUNC_KEYWORD
+%token EQ_RELATION GREATER_RELATION LESS_RELATION EQ_GREATER_RELATION EQ_LESS_RELATION NOT_EQ_RELATION
 
-
+%left OR_OPERATION
+%left AND_OPERATION
+%left NOT_OPERATION
 
 %%
 
@@ -85,7 +88,42 @@ STATEMENT : VAR_KEYWORD VARIABLE_DECLARATION
   | VAR_KEYWORD '(' '\n' MULTIPLE_VARIABLE_DECLARATION  ')' { printf("Multiple declaration\n"); }
   | CONST_KEYWORD VARIABLE_DECLARATION_ASSIGNMENT { printf("Declaration (with assignment) of constant \n"); }
   | SHORT_DEFINING { printf("Short defining\n"); }  
+  | LOGICAL_EXPRESSION
   | '\n'
+  ;
+
+LOGICAL_EXPRESSION :
+  RVALUE RELATION RVALUE        { printf("Rvalues relation\n"); }  
+  | NOT_OPERATION LOGICAL_EXPRESSION      { printf("Denying expression\n"); }  
+  | TRUE_FALSE                  { printf("True/False relation operand\n"); }  
+  | FUNCTION_CALL               { printf("Function call in relation\n"); }  
+  | LOGICAL_EXPRESSION AND_OPERATION LOGICAL_EXPRESSION   { printf("Logical AND\n"); }  
+  | LOGICAL_EXPRESSION OR_OPERATION LOGICAL_EXPRESSION   { printf("Logincal OR \n"); }  
+  | '(' LOGICAL_EXPRESSION ')'                    
+  ;
+
+RELATION : EQ_RELATION 
+  | GREATER_RELATION 
+  | LESS_RELATION 
+  | EQ_GREATER_RELATION 
+  | EQ_LESS_RELATION 
+  | NOT_EQ_RELATION
+  ;
+
+RVALUE : 
+  INTEGER
+  | STRING
+  | FLOAT
+  | TRUE_FALSE
+  | COMPLEX
+  | FUNCTION_CALL
+  ;
+
+FUNCTION_CALL : IDENTIFICATOR '(' FUNCTION_CALL_ARGUMENTS ')'  ;
+FUNCTION_CALL_ARGUMENTS :
+  FUNCTION_CALL_ARGUMENTS ',' RVALUE
+  | RVALUE
+  |
   ;
 
 SHORT_DEFINING:

@@ -78,6 +78,17 @@ false		{ return TRUE_FALSE;   }
 := return COLON_EQ;
 [A-Za-z_]+[A-Za-z_0-9]* { return IDENTIFICATOR;		}
 
+"=="			{ return EQ_RELATION; }
+">"			{ return GREATER_RELATION; }
+"<" 			{ return LESS_RELATION; }
+">=" 		{ return EQ_GREATER_RELATION; }
+"<="		{ return EQ_LESS_RELATION; }
+"!="		{ return NOT_EQ_RELATION; }
+
+"!"			{ return NOT_OPERATION; }
+"&&"		{ return AND_OPERATION; }
+"||"		{ return OR_OPERATION; }
+
 "..."		{ return DOT_DOT_DOT; }
 
 [-+()\*=\.,\{\}] { return yytext[0];		}
