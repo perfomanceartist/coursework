@@ -14,7 +14,7 @@ int num;
 char letter;
 }
 
-%token END_OF_FILE IDENTIFICATOR COLON_EQ DOT_DOT_DOT 
+%token  IDENTIFICATOR COLON_EQ DOT_DOT_DOT 
 %token STRING INTEGER FLOAT TRUE_FALSE COMPLEX
 %token CONST_KEYWORD PACKAGE_KEYWORD IMPORT_KEYWORD VAR_KEYWORD TYPE_KEYWORD FUNC_KEYWORD
 
@@ -22,29 +22,32 @@ char letter;
 
 %%
 
-S : PACKAGE FUNCTIONS 
+S : PACKAGE GLOBALS 
   
   ;
 
 PACKAGE : PACKAGE_KEYWORD IDENTIFICATOR '\n'  { printf("Package declaration\n"); }
   ;
 
-IMPORT : IMPORT_KEYWORD STRING '\n'  { printf("Module imported\n"); }
-  | IMPORT_KEYWORD '(' '\n' IMPORT_MULTIPLE_STRING ')' '\n' { printf("Importing modules with brackets\n"); }
+IMPORT : IMPORT_KEYWORD STRING  { printf("Single module imported\n"); }
+  | IMPORT_KEYWORD '(' '\n' IMPORT_MULTIPLE_STRING ')'  { printf("Importing modules with brackets\n"); }
   ;
-
-
 
 IMPORT_MULTIPLE_STRING :   STRING '\n' IMPORT_MULTIPLE_STRING { printf("Module name\n"); }
   |
   ;
 
 
-FUNCTIONS : FUNCTION '\n' FUNCTIONS
-  |
+GLOBALS : 
+    FUNCTION  
+  | IMPORT 
+  | GLOBALS '\n' FUNCTION 
+  | GLOBALS '\n' IMPORT
+  | GLOBALS '\n'
+  | 
   ;
 
-FUNCTION : FUNC_KEYWORD IDENTIFICATOR '(' FUNC_PARAMS ')' FUNC_RESULT  '{' '}' { printf("Function declaration\n"); }
+FUNCTION : FUNC_KEYWORD IDENTIFICATOR '(' FUNC_PARAMS ')' FUNC_RESULT  '{' STATEMENTS '}' { printf("Function declaration\n"); }
   ;
 
 FUNC_PARAMETER_GROUP :  MULTIPLE_IDENT TYPE { printf("Group of parameters\n"); }
@@ -71,15 +74,18 @@ FUNC_RESULT_NAMED : IDENTIFICATOR TYPE        { printf("Type in named function r
   ;
 
 
-COMMANDS: COMMANDS VAR_KEYWORD VARIABLE_DECLARATION 
-  | COMMANDS VAR_KEYWORD VARIABLE_DECLARATION_ASSIGNMENT  { printf("Declaration (with assignment) of variable\n"); }
-  | COMMANDS VAR_KEYWORD '(' '\n' MULTIPLE_VARIABLE_DECLARATION  ')' { printf("Multiple declaration\n"); }
-  | COMMANDS CONST_KEYWORD VARIABLE_DECLARATION_ASSIGNMENT { printf("Declaration (with assignment) of constant \n"); }
-  | COMMANDS SHORT_DEFINING { printf("Short defining\n"); }
-  | COMMANDS IMPORT 
-  | COMMANDS '\n'
-  | COMMANDS END_OF_FILE
-  |
+
+
+STATEMENTS : STATEMENT 
+  | STATEMENTS  STATEMENT   
+  ;
+
+STATEMENT : VAR_KEYWORD VARIABLE_DECLARATION 
+  | VAR_KEYWORD VARIABLE_DECLARATION_ASSIGNMENT  { printf("Declaration (with assignment) of variable\n"); }
+  | VAR_KEYWORD '(' '\n' MULTIPLE_VARIABLE_DECLARATION  ')' { printf("Multiple declaration\n"); }
+  | CONST_KEYWORD VARIABLE_DECLARATION_ASSIGNMENT { printf("Declaration (with assignment) of constant \n"); }
+  | SHORT_DEFINING { printf("Short defining\n"); }  
+  | '\n'
   ;
 
 SHORT_DEFINING:

@@ -12,6 +12,11 @@
 	#define yyin inputStream
 	#define tmp_scanf(f_, ...) fscanf(yyin, (f_), __VA_ARGS__)
 
+	int yywrap()
+	{
+			return 1;
+	} 
+
 	int main(int argc, char* argv[])
 	{
 		inputStream = fopen(argv[1], "r");
@@ -28,12 +33,12 @@
 	}
 %}
 
-%option noyywrap
+
 
 
 %%
 [/][/].*    {  ;					}
-<<EOF>>     { return END_OF_FILE ; }
+
 
 
 package 	{ return PACKAGE_KEYWORD; }
