@@ -46,6 +46,9 @@ import 		{ return IMPORT_KEYWORD;  }
 func		{ return FUNC_KEYWORD; 	}
 if			{ return IF_KEYWORD;	}
 else		{ return ELSE_KEYWORD;	}
+switch 		{  return SWITCH_KEYWORD; }
+case 		{ return CASE_KEYWORD;	}
+default 	{ return DEFAULT_KEYWORD; }
 var 		{ return VAR_KEYWORD;	}
 int8		{ return TYPE_KEYWORD; }
 int16		{ return TYPE_KEYWORD; }
@@ -92,7 +95,7 @@ false		{ return TRUE_FALSE;   }
 
 "..."		{ return DOT_DOT_DOT; }
 
-[-+()\*=\.,\{\}] { return yytext[0];		}
+[-+()\*=\.,\{\}\:] { return yytext[0];		}
 [ \t\f\v] 	{ ; 					}
 "\n"		{  return yytext[0];	}
 
