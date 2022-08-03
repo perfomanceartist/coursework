@@ -1,6 +1,0 @@
-var (
-        name string = "Tom"
-        age int 
-)
-var s= 5
-s := 10
