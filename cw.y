@@ -44,7 +44,7 @@ FUNCTIONS : FUNCTION '\n' FUNCTIONS
   |
   ;
 
-FUNCTION : FUNC_KEYWORD IDENTIFICATOR '(' FUNC_PARAMS ')'  '{' '}' { printf("Function declaration\n"); }
+FUNCTION : FUNC_KEYWORD IDENTIFICATOR '(' FUNC_PARAMS ')' FUNC_RESULT  '{' '}' { printf("Function declaration\n"); }
   ;
 
 FUNC_PARAMETER_GROUP :  MULTIPLE_IDENT TYPE { printf("Group of parameters\n"); }
@@ -55,14 +55,21 @@ FUNC_PARAMS : FUNC_PARAMETER_GROUP
   | 
   ;
 
-FUNC_RESULT : TYPE
-  | '(' IDENTIFICATOR TYPE ')'
+FUNC_RESULT : TYPE                  { printf("Single unnamed function result\n"); }
+  | '(' FUNC_RESULT_NAMED ')'       { printf("Multiple named function result\n"); }
+  | '(' FUNC_RESULT_UNNAMED ')'     { printf("Multiple unnamed function result\n"); }
+  |
   ;
 
-FUNC_RESULT_TYPES : TYPE ',' FUNC_RESULT_TYPES
-  | TYPE
-  | 
+
+FUNC_RESULT_UNNAMED : TYPE          { printf("Type in unnamed function result\n"); }
+  | FUNC_RESULT_UNNAMED ',' TYPE    { printf("Type in unnamed function result\n"); }
   ;
+
+FUNC_RESULT_NAMED : IDENTIFICATOR TYPE        { printf("Type in named function result\n"); }
+  | FUNC_RESULT_NAMED ',' IDENTIFICATOR TYPE  { printf("Type in named function result\n"); }
+  ;
+
 
 COMMANDS: COMMANDS VAR_KEYWORD VARIABLE_DECLARATION 
   | COMMANDS VAR_KEYWORD VARIABLE_DECLARATION_ASSIGNMENT  { printf("Declaration (with assignment) of variable\n"); }
@@ -110,7 +117,9 @@ VARIABLE_DECLARATION_ASSIGNMENT:
   ;
 
 
-TYPE: TYPE_KEYWORD ;
+TYPE: TYPE_KEYWORD 
+  | FUNC_KEYWORD '(' FUNC_RESULT_UNNAMED ')' TYPE 
+  ;
 
 MULTIPLE_IDENT: IDENTIFICATOR 
   | MULTIPLE_IDENT ',' IDENTIFICATOR 
