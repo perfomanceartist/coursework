@@ -43,8 +43,9 @@
 
 package 	{ return PACKAGE_KEYWORD; }
 import 		{ return IMPORT_KEYWORD;  }
-func		{ return FUNC_KEYWORD; }
-
+func		{ return FUNC_KEYWORD; 	}
+if			{ return IF_KEYWORD;	}
+else		{ return ELSE_KEYWORD;	}
 var 		{ return VAR_KEYWORD;	}
 int8		{ return TYPE_KEYWORD; }
 int16		{ return TYPE_KEYWORD; }
