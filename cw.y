@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+int yylex();
 //extern int yylex();
 void yyerror(char *msg);
 
@@ -13,20 +14,38 @@ int num;
 char letter;
 }
 
-%token  END_OF_FILE IDENTIFICATOR STRING VAR_KEYWORD TYPE_KEYWORD INTEGER FLOAT TRUE_FALSE COMPLEX COLON_EQ CONST_KEYWORD
-
+%token END_OF_FILE IDENTIFICATOR COLON_EQ 
+%token STRING INTEGER FLOAT TRUE_FALSE COMPLEX
+%token CONST_KEYWORD PACKAGE_KEYWORD IMPORT_KEYWORD VAR_KEYWORD TYPE_KEYWORD
 
 
 
 %%
 
-S : COMMANDS
+S : PACKAGE COMMANDS 
+  
   ;
+
+PACKAGE : PACKAGE_KEYWORD IDENTIFICATOR '\n'  { printf("Package declaration\n"); }
+  ;
+
+IMPORT : IMPORT_KEYWORD STRING '\n'  { printf("Module imported\n"); }
+  | IMPORT_KEYWORD '(' IMPORT_MULTIPLE_STRING ')' '\n' { printf("Importing modules with brackets\n"); }
+  ;
+
+
+
+IMPORT_MULTIPLE_STRING :   STRING '\n' IMPORT_MULTIPLE_STRING { printf("Module name\n"); }
+  |
+  ;
+
+
 COMMANDS: COMMANDS VAR_KEYWORD VARIABLE_DECLARATION 
   | COMMANDS VAR_KEYWORD VARIABLE_DECLARATION_ASSIGNMENT  { printf("Declaration (with assignment) of variable\n"); }
   | COMMANDS VAR_KEYWORD '(' '\n' MULTIPLE_VARIABLE_DECLARATION  ')' { printf("Multiple declaration\n"); }
   | COMMANDS CONST_KEYWORD VARIABLE_DECLARATION_ASSIGNMENT { printf("Declaration (with assignment) of constant \n"); }
   | COMMANDS SHORT_DEFINING { printf("Short defining\n"); }
+  | COMMANDS IMPORT 
   | COMMANDS '\n'
   | COMMANDS END_OF_FILE
   |

@@ -35,6 +35,9 @@
 [/][/].*    {  ;					}
 <<EOF>>     return END_OF_FILE ;
 
+package 	{ return PACKAGE_KEYWORD; }
+import 		{ return IMPORT_KEYWORD;  }
+
 var 		{ return VAR_KEYWORD;	}
 int8		{ return TYPE_KEYWORD; }
 int16		{ return TYPE_KEYWORD; }
@@ -73,6 +76,8 @@ false		{ return TRUE_FALSE;   }
 [-+()\*=\.,] { return yytext[0];		}
 [ \t\f\v] 	{ ; 					}
 "\n"		{  return yytext[0];	}
+
+
 
 "^" 		{ return '^'; 			}
 ";"         { return ';'; 			}
