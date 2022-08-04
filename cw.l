@@ -49,7 +49,14 @@ else		{ return ELSE_KEYWORD;	}
 switch 		{  return SWITCH_KEYWORD; }
 case 		{ return CASE_KEYWORD;	}
 default 	{ return DEFAULT_KEYWORD; }
-var 		{ return VAR_KEYWORD;	}
+
+for			{ return FOR_KEYWORD;  	}
+break		{ return BREAK_KEYWORD;  	}
+continue	{ return CONTINUE_KEYWORD;  }
+range		{ return RANGE_KEYWORD;  	}
+return		{ return RETURN_KEYWORD; 	}
+
+var 		{ return VAR_KEYWORD;  }
 int8		{ return TYPE_KEYWORD; }
 int16		{ return TYPE_KEYWORD; }
 int32 		{ return TYPE_KEYWORD; }
