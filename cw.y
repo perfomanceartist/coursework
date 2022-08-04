@@ -114,6 +114,7 @@ ASSIGNMENT : IDENTIFICATOR '=' RVALUE
 FOR :
   FOR_KEYWORD FOR_INIT ';' FOR_CONDITION ';' FOR_AFTER '{' STATEMENTS '}' { printf("For-loop\n"); }
   | FOR_KEYWORD  FOR_CONDITION '{' STATEMENTS '}'                         { printf("Shortened for-loop\n"); }
+  | FOR_KEYWORD IDENTIFICATOR ',' IDENTIFICATOR COLON_EQ RANGE_KEYWORD IDENTIFICATOR '{' STATEMENTS '}' { printf("For in range loop\n"); }
   ;
 
 FOR_INIT : SHORT_DEFINING       { printf("Short defining in For-loop init \n"); }
