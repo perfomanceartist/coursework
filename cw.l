@@ -96,6 +96,9 @@ false		{ return TRUE_FALSE;   }
 "<="		{ return EQ_LESS_RELATION; }
 "!="		{ return NOT_EQ_RELATION; }
 
+"++"		{ return INCREMENT; 	}	
+"--"		{ return DECREMENT; 	}	
+
 "!"			{ return NOT_OPERATION; }
 "&&"		{ return AND_OPERATION; }
 "||"		{ return OR_OPERATION; }
