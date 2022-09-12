@@ -57,29 +57,31 @@ range		{ return RANGE_KEYWORD;  	}
 return		{ return RETURN_KEYWORD; 	}
 
 var 		{ return VAR_KEYWORD;  }
-int8		{ return TYPE_KEYWORD; }
-int16		{ return TYPE_KEYWORD; }
-int32 		{ return TYPE_KEYWORD; }
-int64		{ return TYPE_KEYWORD; }
-uint8		{ return TYPE_KEYWORD; }
-uint16 		{ return TYPE_KEYWORD; }
-uint32		{ return TYPE_KEYWORD; }
-uint64		{ return TYPE_KEYWORD; }
-byte		{ return TYPE_KEYWORD; }
-rune		{ return TYPE_KEYWORD; }
-int			{ return TYPE_KEYWORD; }
-uint		{ return TYPE_KEYWORD; }
+int8		{ return INT_TYPE; }
+int16		{ return INT_TYPE; }
+int32 		{ return INT_TYPE; }
+int64		{ return INT_TYPE; }
+uint8		{ return INT_TYPE; }
+uint16 		{ return INT_TYPE; }
+uint32		{ return INT_TYPE; }
+uint64		{ return INT_TYPE; }
+byte		{ return INT_TYPE; }
+rune		{ return INT_TYPE; }
+int			{ return INT_TYPE; }
+uint		{ return INT_TYPE; }
 
-float32		{ return TYPE_KEYWORD; }
-float64		{ return TYPE_KEYWORD; }
+float32		{ return FLOAT_TYPE; }
+float64		{ return FLOAT_TYPE; }
 
-complex64	{ return TYPE_KEYWORD; }
-complex128	{ return TYPE_KEYWORD; }
+complex64	{ return COMPLEX_TYPE; }
+complex128	{ return COMPLEX_TYPE; }
 
-bool		{ return TYPE_KEYWORD; }
-string 		{ return TYPE_KEYWORD; }
+bool		{ return BOOL_TYPE; 	}
+string 		{ return STRING_TYPE; 	}
 
-const 		{ return CONST_KEYWORD;}
+const 		{ return CONST_KEYWORD; 	}
+type		{ return TYPE_KEYWORD; }	
+
 [-]?[0-9]+ 	{ return INTEGER;	   }
 [-]?[0-9]+[\.][0-9]+ 	{ return FLOAT;	 		    }
 true 		{ return TRUE_FALSE;   }
@@ -105,7 +107,7 @@ false		{ return TRUE_FALSE;   }
 
 "..."		{ return DOT_DOT_DOT; }
 
-[-+()\*=\.,\{\}\:] { return yytext[0];		}
+[-+()\*=\.,\{\}\:\[\]] { return yytext[0];		}
 [ \t\f\v] 	{ ; 					}
 "\n"		{  return yytext[0];	}
 
