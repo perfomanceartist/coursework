@@ -114,7 +114,11 @@ UNARY_OPERATION :
   | INCREMENT IDENTIFICATOR
   | DECREMENT IDENTIFICATOR 
   ;
-ASSIGNMENT : IDENTIFICATOR '=' RVALUE   { printf("Assignment of variable.\n");  };
+ASSIGNMENT : 
+  IDENTIFICATOR '=' RVALUE   { printf("Assignment of variable.\n");  }
+  | IDENTIFICATOR ARRAY_INDEXATION  '=' RVALUE { printf("Assigment of array element. \n"); }
+ // | POINTER_INDEXATION IDENTIFICATOR   '=' RVALUE { printf("Assigment of pointer by address. \n"); }
+  
   ;
 FOR :
   FOR_KEYWORD FOR_INIT ';' FOR_CONDITION ';' FOR_AFTER '{' STATEMENTS '}' { printf("For-loop\n"); }
@@ -211,10 +215,27 @@ RVALUE :
   | RVALUE '/' RVALUE
   | RVALUE '%' RVALUE
   | TYPE '{' FUNCTION_CALL_ARGUMENTS '}' //Для уменьшения избыточности одно и то же правило
-  | IDENTIFICATOR '[' RVALUE ']'
+  | IDENTIFICATOR ARRAY_INDEXATION
+  | '&' IDENTIFICATOR
+  | POINTER_INDEXATION IDENTIFICATOR
   ;
 
-FUNCTION_CALL : IDENTIFICATOR '(' FUNCTION_CALL_ARGUMENTS ')'   { printf("Function call\n"); } ;
+POINTER_INDEXATION:
+  '*' 
+  | POINTER_INDEXATION '*'
+  ;
+ARRAY_INDEXATION:
+  '[' RVALUE ']'
+  | ARRAY_INDEXATION '[' RVALUE ']'
+  ;
+
+
+FUNCTION_CALL : 
+  IDENTIFICATOR '(' FUNCTION_CALL_ARGUMENTS ')'   { printf("Function call\n"); } 
+  | IDENTIFICATOR '.' IDENTIFICATOR '(' FUNCTION_CALL_ARGUMENTS ')'   { printf("Function from module call\n"); } 
+  ;
+
+
 
 FUNCTION_CALL_ARGUMENTS :
   FUNCTION_CALL_ARGUMENTS ',' RVALUE
@@ -255,6 +276,7 @@ TYPE:
   | FUNC_KEYWORD '(' FUNC_RESULT_UNNAMED ')' TYPE 
   | '[' INTEGER ']' TYPE
   | '[' DOT_DOT_DOT ']' TYPE
+  | '*' TYPE
   ;
 
 MULTIPLE_IDENT: IDENTIFICATOR 
