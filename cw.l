@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include "cw.tab.h"
 
-	extern unsigned line_number;
+	unsigned line_number;
     extern int yylex();
 	extern void yyerror(char * msg);
 	FILE *inputStream;
@@ -16,9 +16,14 @@
 	{
 			return 1;
 	} 
+	void print(char* msg) {
+		printf("(line %d). %s\n", line_number, msg);
+	}
 
 	int main(int argc, char* argv[])
 	{
+		line_number = 1;
+
 		inputStream = fopen(argv[1], "r");
 		
 		if (inputStream == NULL)
@@ -81,6 +86,8 @@ string 		{ return STRING_TYPE; 	}
 
 const 		{ return CONST_KEYWORD; 	}
 type		{ return TYPE_KEYWORD; }	
+struct 		{ return STRUCT_KEYWORD; }
+interface 	{ return INTERFACE_KEYWORD; }
 
 [-]?[0-9]+ 	{ return INTEGER;	   }
 [-]?[0-9]+[\.][0-9]+ 	{ return FLOAT;	 		    }
@@ -109,8 +116,8 @@ false		{ return TRUE_FALSE;   }
 
 [-+()\*=\.,\{\}\:\[\]] { return yytext[0];		}
 [ \t\f\v] 	{ ; 					}
-"\n"		{  return yytext[0];	}
-
+"\n"		{  line_number++; return yytext[0];	}
+"&"			{  return yytext[0];	}
 
 
 "^" 		{ return '^'; 			}
