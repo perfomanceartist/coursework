@@ -97,6 +97,8 @@ interface 	{ return INTERFACE_KEYWORD; }
 nil			{ return NIL_KEYWORD; 	}
 defer 		{ return DEFER_KEYWORD; }
 
+"go"		{ return GO_KEYWORD; }
+
 ">>"		{ return SHIFT_RIGHT; 	}
 "<<"		{ return SHIFT_LEFT;	}
 [-]?[0-9]+ 	{ return INTEGER;	   }
