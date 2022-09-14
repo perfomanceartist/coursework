@@ -10,7 +10,7 @@ lex.yy.c: cw.l
 
 
 clean:
-	rm recogniser.exe y.tab.c lex.yy.c
+	del recogniser.exe cw.tab.c lex.yy.c
 
 
 	

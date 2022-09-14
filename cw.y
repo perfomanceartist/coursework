@@ -36,12 +36,11 @@ char letter;
 
 %%
 
-S : 
-  PACKAGE GLOBALS 
+S :  PACKAGE  '\n' GLOBALS    
   ;
 
 PACKAGE : 
-  PACKAGE_KEYWORD IDENTIFICATOR '\n'  { print("Package declaration"); }
+  PACKAGE_KEYWORD IDENTIFICATOR  { print("Package declaration"); }
   ;
 
 IMPORT : IMPORT_KEYWORD STRING  { print("Single module imported"); }
@@ -53,15 +52,18 @@ IMPORT_MULTIPLE_STRING :   STRING '\n' IMPORT_MULTIPLE_STRING { print("Module na
   ;
 
 GLOBALS : 
-  FUNCTION  
-  | IMPORT 
+  GLOBAL
+  | GLOBALS '\n' GLOBAL
+  ;
+
+GLOBAL:
+  FUNCTION
+  | IMPORT
   | TYPEDEF
-  | GLOBALS '\n' FUNCTION 
-  | GLOBALS '\n' IMPORT
-  | GLOBALS '\n' TYPEDEF
-  | GLOBALS '\n'
+  | DECLARATION   { print("Global declaration"); } 
   | 
   ;
+
 
 TYPEDEF:
   TYPE_KEYWORD TESTVAL TESTVAL     { print("Extra type definition"); }// QUESTION
@@ -201,7 +203,7 @@ FOR_AFTER :
 DECLARATION: 
   VAR_KEYWORD VARIABLE_DECLARATION 
   | VAR_KEYWORD VARIABLE_DECLARATION_ASSIGNMENT  { print("Declaration (with assignment) of variable"); }
-  | VAR_KEYWORD '(' '\n' MULTIPLE_VARIABLE_DECLARATION  ')' { print("Multiple declaration"); }
+  | VAR_KEYWORD '('  MULTIPLE_VARIABLE_DECLARATION  ')' { print("Multiple declaration"); }
   | CONST_KEYWORD VARIABLE_DECLARATION_ASSIGNMENT { print("Declaration (with assignment) of constant "); }
   | SHORT_DEFINING { print("Short defining"); }  
   ;
@@ -261,12 +263,10 @@ RVALUE :
   | VALUE '*' RVALUE //Создает 2 конфликта сдвиг/свертка с   | FULL_IDENTIFICATOR и   | FULL_IDENTIFICATOR ARRAY_INDEXATION 
   | VALUE '/' RVALUE 
   | VALUE '%' RVALUE
-//  | TESTVAL '{' INITIALIZER '}'                            { print("INITIALIZER_testVAL");}
   | TYPE '{' INITIALIZER '}'                            { print("INITIALIZER");}  
   | IDENTIFICATOR '{' INITIALIZER '}'                   { print("INITIALIZER2");} 
   | TYPE '{' FUNCTION_CALL_ARGUMENTS '}'                { print("INITIALIZER3");} 
   | IDENTIFICATOR '{' FUNCTION_CALL_ARGUMENTS '}'                { print("INITIALIZER4");} 
-//  | TESTVAL '{' FUNCTION_CALL_ARGUMENTS '}'                { print("INITIALIZER_func");} 
   ;
 
 VALUE:
@@ -318,23 +318,30 @@ SHORT_DEFINING:
 MULTIPLE_VARIABLE_DECLARATION:
   VARIABLE_DECLARATION 
   | VARIABLE_DECLARATION_ASSIGNMENT
+  | IDENTIFICATOR '=' MULTIPLE_RVALUE
   | MULTIPLE_VARIABLE_DECLARATION  VARIABLE_DECLARATION
   | MULTIPLE_VARIABLE_DECLARATION  VARIABLE_DECLARATION_ASSIGNMENT 
+  | MULTIPLE_VARIABLE_DECLARATION  IDENTIFICATOR '=' MULTIPLE_RVALUE
+  | MULTIPLE_VARIABLE_DECLARATION '\n'
+  | '\n'
   ; 
 
 
  
 VARIABLE_DECLARATION:
   MULTIPLE_IDENT TESTVAL  {print("Declaration of variable");}  
-//  MULTIPLE_IDENT TYPE  {print("Declaration of variable");}  
-//  | MULTIPLE_IDENT IDENTIFICATOR  {print("Declaration of variable");}  
   ;
 
 VARIABLE_DECLARATION_ASSIGNMENT: 
-  MULTIPLE_IDENT TESTVAL '='  RVALUE
-//  MULTIPLE_IDENT TYPE '='  RVALUE
-//  | MULTIPLE_IDENT IDENTIFICATOR '='  RVALUE
+  MULTIPLE_IDENT TESTVAL '='  MULTIPLE_RVALUE
+ // | MULTIPLE_IDENT '='  MULTIPLE_RVALUE
   ;
+
+MULTIPLE_RVALUE:
+  MULTIPLE_RVALUE ',' RVALUE
+  | RVALUE
+  ;
+
 
 TESTVAL:
   TYPE
@@ -352,7 +359,6 @@ TYPE:
   | '[' INTEGER ']' TYPE
   | '[' DOT_DOT_DOT ']' TYPE
   | '*' TYPE //Создает конфликт свептка/свертка с ???
-//  | IDENTIFICATOR
   ;
 
 MULTIPLE_IDENT: 
