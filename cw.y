@@ -168,10 +168,10 @@ UNARY_OPERATION :
   ;
 
 ASSIGNMENT : 
-  IDENTIFICATOR '=' RVALUE   { print("Assignment of variable.");  }
-  | IDENTIFICATOR ARRAY_INDEXATION  '=' RVALUE { print("Assigment of array element. "); }
-  | '*' IDENTIFICATOR   '=' RVALUE { print("Assigment of pointer by address. "); } //
-  | IDENTIFICATOR OPER_ASSIGNMENT RVALUE  { print("Operation + assignment");}
+  FULL_IDENTIFICATOR '=' RVALUE   { print("Assignment of variable.");  }
+  | FULL_IDENTIFICATOR ARRAY_INDEXATION  '=' RVALUE { print("Assigment of array element. "); }
+  | '*' FULL_IDENTIFICATOR   '=' RVALUE { print("Assigment of pointer by address. "); } //
+  | FULL_IDENTIFICATOR OPER_ASSIGNMENT RVALUE  { print("Operation + assignment");}
   ;
 FOR :
   FOR_KEYWORD FOR_INIT ';' FOR_CONDITION ';' FOR_AFTER '{' STATEMENTS '}' { print("For-loop"); }
@@ -362,6 +362,7 @@ TYPE:
   | FUNC_KEYWORD '(' FUNC_RESULT_UNNAMED ')' TYPE 
   | '[' INTEGER ']' TYPE
   | '[' DOT_DOT_DOT ']' TYPE
+  | '[' ']' TYPE
   | '*' TYPE //Создает конфликт свептка/свертка с ???
   ;
 
