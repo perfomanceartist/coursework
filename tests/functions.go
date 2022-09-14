@@ -3,9 +3,11 @@ import  "fmt"
  
 func main() {
     var f func(int, int) int = add
-    //f := func(x, y int) int{ return x + y} ??????????????????????????????????
-    //var f func(int, int) int = func(x, y int) int{ return x + y}
-    //action(5, 6, func (x int, y int) int { return x * y }) 
+    f := func(x int, y int) int{
+        return x + y 
+    } 
+    var f func(int, int) int = func(x int, y int) int{ return x + y}
+    action(5, 6, func (x int, y int) int { return x * y }) 
 }
  
 func add(x int, y int){

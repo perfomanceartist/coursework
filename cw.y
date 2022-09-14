@@ -84,8 +84,6 @@ INTERFACE_FIELD:
 
 INTERFACE_METHOD_ARGS:
   TESTVAL
-//  TYPE
-//  | IDENTIFICATOR
   | INTERFACE_METHOD_ARGS ',' TESTVAL
   |
   ;
@@ -96,14 +94,17 @@ STRUCT_FIELDS:
   ;
 
 STRUCT_FIELD: 
-//  MULTIPLE_IDENT TYPE
-//  | MULTIPLE_IDENT IDENTIFICATOR  
   MULTIPLE_IDENT TESTVAL 
   |
   ;
 
-FUNCTION : FUNC_KEYWORD IDENTIFICATOR '(' FUNC_PARAMS ')' FUNC_RESULT  '{' STATEMENTS '}' { print("Function declaration"); }
-  | FUNC_KEYWORD '(' TESTVAL TESTVAL ')' IDENTIFICATOR '(' FUNC_PARAMS ')' FUNC_RESULT  '{' STATEMENTS '}' { print("Method declaration"); }//QUESTION ?!?!??!?!??!
+FUNCTION : FUNC_KEYWORD IDENTIFICATOR '(' FUNC_PARAMS ')' FUNC_RESULT  '{' FUNCTION_STATEMENTS '}' { print("Function declaration"); }
+  | FUNC_KEYWORD '(' TESTVAL TESTVAL ')' IDENTIFICATOR '(' FUNC_PARAMS ')' FUNC_RESULT  '{' FUNCTION_STATEMENTS '}' { print("Method declaration"); }//QUESTION ?!?!??!?!??!
+  ;
+
+FUNCTION_STATEMENTS:
+  STATEMENTS
+  |
   ;
 
 FUNC_PARAMETER_GROUP :  
@@ -111,9 +112,11 @@ FUNC_PARAMETER_GROUP :
   | IDENTIFICATOR DOT_DOT_DOT TESTVAL { print("Dot dot dot parameter"); }
   ;
 
-FUNC_PARAMS : FUNC_PARAMETER_GROUP 
-  | FUNC_PARAMS ',' FUNC_PARAMETER_GROUP
-  | 
+FUNC_PARAMS: FUNC_PARAMETER_GROUPS
+  |
+  ;
+FUNC_PARAMETER_GROUPS : FUNC_PARAMETER_GROUP 
+  | FUNC_PARAMETER_GROUPS ',' FUNC_PARAMETER_GROUP
   ;
 
 FUNC_RESULT : 
@@ -126,6 +129,7 @@ FUNC_RESULT :
 FUNC_RESULT_UNNAMED : 
   TESTVAL          { print("Type in unnamed function result"); }
   | FUNC_RESULT_UNNAMED ',' TESTVAL    { print("Type in unnamed function result"); }
+  |
   ;
 
 FUNC_RESULT_NAMED :
@@ -134,19 +138,19 @@ FUNC_RESULT_NAMED :
   ;
 
 STATEMENTS : STATEMENT 
-  | STATEMENTS  STATEMENT   
+  | STATEMENTS  STATEMENT 
   ;
 
-STATEMENT : DECLARATION '\n' 
-  | IF_ELSE_STATEMENT '\n'
-  | FUNCTION_CALL '\n'
-  | SWITCH '\n'
+STATEMENT : DECLARATION  
+  | IF_ELSE_STATEMENT 
+  | FUNCTION_CALL 
+  | SWITCH 
   | ASSIGNMENT
-  | UNARY_OPERATION '\n'
-  | FOR '\n'
-  | BREAK_KEYWORD '\n'
-  | CONTINUE_KEYWORD '\n'
-  | RETURN '\n'
+  | UNARY_OPERATION 
+  | FOR 
+  | BREAK_KEYWORD 
+  | CONTINUE_KEYWORD 
+  | RETURN 
   | '\n'
   | DEFER_KEYWORD FUNCTION_CALL   { print("Defer function call");}
   ;
@@ -265,6 +269,7 @@ RVALUE :
   | IDENTIFICATOR '{' INITIALIZER '}'                   { print("Initializer");} 
   | TYPE '{' FUNCTION_CALL_ARGUMENTS '}'                { print("Initializer");} 
   | IDENTIFICATOR '{' FUNCTION_CALL_ARGUMENTS '}'       { print("Initializer");} 
+  | FUNC_KEYWORD  '(' FUNC_PARAMS ')' FUNC_RESULT  '{' FUNCTION_STATEMENTS '}'   { print("Anonimous function");} 
   ;
 
 VALUE:
