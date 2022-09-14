@@ -114,7 +114,8 @@ false		{ return TRUE_FALSE;   }
 
 "..."		{ return DOT_DOT_DOT; }
 
-[-+()\*=\.,\{\}\:\[\]] { return yytext[0];		}
+[-+()=\.,\{\}\:\[\]] { return yytext[0];		}
+[\*]*       		 {return '*'; }
 [ \t\f\v] 	{ ; 					}
 "\n"		{  line_number++; return yytext[0];	}
 "&"			{  return yytext[0];	}
