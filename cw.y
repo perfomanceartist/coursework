@@ -14,7 +14,7 @@ int num;
 char letter;
 }
 
-%token  IDENTIFICATOR COLON_EQ DOT_DOT_DOT 
+%token  IDENTIFICATOR COLON_EQ DOT_DOT_DOT NIL_KEYWORD DEFER_KEYWORD SHIFT_LEFT SHIFT_RIGHT OPER_ASSIGNMENT
 %token STRING INTEGER FLOAT TRUE_FALSE COMPLEX
 %token TYPE_KEYWORD STRUCT_KEYWORD INTERFACE_KEYWORD
 %token CONST_KEYWORD PACKAGE_KEYWORD IMPORT_KEYWORD VAR_KEYWORD  FUNC_KEYWORD RETURN_KEYWORD
@@ -108,10 +108,6 @@ FUNCTION : FUNC_KEYWORD IDENTIFICATOR '(' FUNC_PARAMS ')' FUNC_RESULT  '{' STATE
 
 FUNC_PARAMETER_GROUP :  
   MULTIPLE_IDENT TESTVAL { print("Group of parameters"); }
-  //MULTIPLE_IDENT TYPE { print("Group of parameters"); }
-  //| MULTIPLE_IDENT IDENTIFICATOR { print("Group of parameters"); }
-  //| IDENTIFICATOR DOT_DOT_DOT TYPE { print("Dot dot dot parameter"); }
-  //| IDENTIFICATOR DOT_DOT_DOT IDENTIFICATOR { print("Dot dot dot parameter"); }
   | IDENTIFICATOR DOT_DOT_DOT TESTVAL { print("Dot dot dot parameter"); }
   ;
 
@@ -122,8 +118,6 @@ FUNC_PARAMS : FUNC_PARAMETER_GROUP
 
 FUNC_RESULT : 
   TESTVAL                 { print("Single unnamed function result"); }
-//  TYPE                  { print("Single unnamed function result"); }
-//  | IDENTIFICATOR                 { print("Single unnamed function result"); }
   | '(' FUNC_RESULT_NAMED ')'       { print("Multiple named function result"); }
   | '(' FUNC_RESULT_UNNAMED ')'     { print("Multiple unnamed function result"); }
   |
@@ -131,8 +125,6 @@ FUNC_RESULT :
 
 FUNC_RESULT_UNNAMED : 
   TESTVAL          { print("Type in unnamed function result"); }
-//  TYPE          { print("Type in unnamed function result"); }
-//  | IDENTIFICATOR
   | FUNC_RESULT_UNNAMED ',' TESTVAL    { print("Type in unnamed function result"); }
   ;
 
@@ -156,12 +148,12 @@ STATEMENT : DECLARATION '\n'
   | CONTINUE_KEYWORD '\n'
   | RETURN '\n'
   | '\n'
+  | DEFER_KEYWORD FUNCTION_CALL   { print("Defer function call");}
   ;
 
 RETURN :
   RETURN_KEYWORD
-  | RETURN_KEYWORD MULTIPLE_IDENT
-//  | RETURN_KEYWORD RVALUE //REDUCE/REDUCE
+  | RETURN_KEYWORD MULTIPLE_RVALUE //REDUCE/REDUCE
   ;
 
 UNARY_OPERATION : 
@@ -175,7 +167,7 @@ ASSIGNMENT :
   IDENTIFICATOR '=' RVALUE   { print("Assignment of variable.");  }
   | IDENTIFICATOR ARRAY_INDEXATION  '=' RVALUE { print("Assigment of array element. "); }
   | '*' IDENTIFICATOR   '=' RVALUE { print("Assigment of pointer by address. "); } //
-  
+  | IDENTIFICATOR OPER_ASSIGNMENT RVALUE  { print("Operation + assignment");}
   ;
 FOR :
   FOR_KEYWORD FOR_INIT ';' FOR_CONDITION ';' FOR_AFTER '{' STATEMENTS '}' { print("For-loop"); }
@@ -258,15 +250,21 @@ RELATION : EQ_RELATION
 
 RVALUE : 
   VALUE
+  //| '(' RVALUE ')' + 2 reduce/reduce
   | VALUE '+' RVALUE
   | VALUE '-' RVALUE
   | VALUE '*' RVALUE //Создает 2 конфликта сдвиг/свертка с   | FULL_IDENTIFICATOR и   | FULL_IDENTIFICATOR ARRAY_INDEXATION 
   | VALUE '/' RVALUE 
   | VALUE '%' RVALUE
-  | TYPE '{' INITIALIZER '}'                            { print("INITIALIZER");}  
-  | IDENTIFICATOR '{' INITIALIZER '}'                   { print("INITIALIZER2");} 
-  | TYPE '{' FUNCTION_CALL_ARGUMENTS '}'                { print("INITIALIZER3");} 
-  | IDENTIFICATOR '{' FUNCTION_CALL_ARGUMENTS '}'                { print("INITIALIZER4");} 
+  | VALUE '|' RVALUE
+  | VALUE '^' RVALUE
+  | VALUE '&' RVALUE
+  | VALUE SHIFT_LEFT RVALUE
+  | VALUE SHIFT_RIGHT RVALUE
+  | TYPE '{' INITIALIZER '}'                            { print("Initializer");}  
+  | IDENTIFICATOR '{' INITIALIZER '}'                   { print("Initializer");} 
+  | TYPE '{' FUNCTION_CALL_ARGUMENTS '}'                { print("Initializer");} 
+  | IDENTIFICATOR '{' FUNCTION_CALL_ARGUMENTS '}'       { print("Initializer");} 
   ;
 
 VALUE:
@@ -275,6 +273,7 @@ VALUE:
   | FLOAT
   | TRUE_FALSE
   | COMPLEX
+  | NIL_KEYWORD
   | FUNCTION_CALL
   | FULL_IDENTIFICATOR
   | FULL_IDENTIFICATOR ARRAY_INDEXATION

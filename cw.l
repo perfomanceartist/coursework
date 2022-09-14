@@ -94,6 +94,11 @@ type		{ return TYPE_KEYWORD; }
 struct 		{ return STRUCT_KEYWORD; }
 interface 	{ return INTERFACE_KEYWORD; }
 
+nil			{ return NIL_KEYWORD; 	}
+defer 		{ return DEFER_KEYWORD; }
+
+">>"		{ return SHIFT_RIGHT; 	}
+"<<"		{ return SHIFT_LEFT;	}
 [-]?[0-9]+ 	{ return INTEGER;	   }
 [-]?[0-9]+[\.][0-9]+ 	{ return FLOAT;	 		    }
 true 		{ return TRUE_FALSE;   }
@@ -110,6 +115,17 @@ false		{ return TRUE_FALSE;   }
 "<="		{ return EQ_LESS_RELATION; }
 "!="		{ return NOT_EQ_RELATION; }
 
+"+="		{ return OPER_ASSIGNMENT;	}
+"-="		{ return OPER_ASSIGNMENT;	}
+"*="		{ return OPER_ASSIGNMENT;	}
+"/="		{ return OPER_ASSIGNMENT;	}
+"%="		{ return OPER_ASSIGNMENT;	}
+">>="		{ return OPER_ASSIGNMENT;	}
+"<<="		{ return OPER_ASSIGNMENT;	}
+"|="		{ return OPER_ASSIGNMENT;	}
+"^="		{ return OPER_ASSIGNMENT;	}
+
+
 "++"		{ return INCREMENT; 	}	
 "--"		{ return DECREMENT; 	}	
 
@@ -124,10 +140,10 @@ false		{ return TRUE_FALSE;   }
 [ \t\f\v] 	{ ; 					}
 "\n"		{  line_number++; return yytext[0];	}
 "&"			{  return yytext[0];	}
+"|" 		{  return yytext[0];	}
 
-
-"^" 		{ return '^'; 			}
-";"         { return ';'; 			}
+"^" 		{  return yytext[0];	}
+";"         {  return yytext[0];	}
 
 
 %%
