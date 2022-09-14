@@ -36,11 +36,12 @@ char letter;
 
 %%
 
-S : PACKAGE GLOBALS 
-  
+S : 
+  PACKAGE GLOBALS 
   ;
 
-PACKAGE : PACKAGE_KEYWORD IDENTIFICATOR '\n'  { print("Package declaration"); }
+PACKAGE : 
+  PACKAGE_KEYWORD IDENTIFICATOR '\n'  { print("Package declaration"); }
   ;
 
 IMPORT : IMPORT_KEYWORD STRING  { print("Single module imported"); }
@@ -51,9 +52,8 @@ IMPORT_MULTIPLE_STRING :   STRING '\n' IMPORT_MULTIPLE_STRING { print("Module na
   |
   ;
 
-
 GLOBALS : 
-    FUNCTION  
+  FUNCTION  
   | IMPORT 
   | TYPEDEF
   | GLOBALS '\n' FUNCTION 
@@ -64,7 +64,7 @@ GLOBALS :
   ;
 
 TYPEDEF:
-  TYPE_KEYWORD IDENTIFICATOR TYPE     { print("Extra type definition"); }
+  TYPE_KEYWORD TESTVAL TESTVAL     { print("Extra type definition"); }// QUESTION
   | TYPE_KEYWORD IDENTIFICATOR STRUCT_KEYWORD '{' STRUCT_FIELDS '}' { print("Struct definition"); }
   | TYPE_KEYWORD IDENTIFICATOR INTERFACE_KEYWORD '{' INTERFACE_FIELDS '}' { print("Interface definition"); }
   ;
@@ -81,50 +81,63 @@ INTERFACE_FIELD:
   ;
 
 INTERFACE_METHOD_ARGS:
-  TYPE
-  | INTERFACE_METHOD_ARGS ',' TYPE
+  TESTVAL
+//  TYPE
+//  | IDENTIFICATOR
+  | INTERFACE_METHOD_ARGS ',' TESTVAL
   |
   ;
-
 
 STRUCT_FIELDS:
   STRUCT_FIELDS  STRUCT_FIELD '\n'
   |
   ;
 
-STRUCT_FIELD: MULTIPLE_IDENT TYPE  
+STRUCT_FIELD: 
+//  MULTIPLE_IDENT TYPE
+//  | MULTIPLE_IDENT IDENTIFICATOR  
+  MULTIPLE_IDENT TESTVAL 
   |
   ;
 
 FUNCTION : FUNC_KEYWORD IDENTIFICATOR '(' FUNC_PARAMS ')' FUNC_RESULT  '{' STATEMENTS '}' { print("Function declaration"); }
-  | FUNC_KEYWORD '(' IDENTIFICATOR TYPE ')' IDENTIFICATOR '(' FUNC_PARAMS ')' FUNC_RESULT  '{' STATEMENTS '}' { print("Method declaration"); }
+  | FUNC_KEYWORD '(' TESTVAL TESTVAL ')' IDENTIFICATOR '(' FUNC_PARAMS ')' FUNC_RESULT  '{' STATEMENTS '}' { print("Method declaration"); }//QUESTION ?!?!??!?!??!
   ;
 
-FUNC_PARAMETER_GROUP :  MULTIPLE_IDENT TYPE { print("Group of parameters"); }
-  | IDENTIFICATOR DOT_DOT_DOT TYPE { print("Dot dot dot parameter"); }
+FUNC_PARAMETER_GROUP :  
+  MULTIPLE_IDENT TESTVAL { print("Group of parameters"); }
+  //MULTIPLE_IDENT TYPE { print("Group of parameters"); }
+  //| MULTIPLE_IDENT IDENTIFICATOR { print("Group of parameters"); }
+  //| IDENTIFICATOR DOT_DOT_DOT TYPE { print("Dot dot dot parameter"); }
+  //| IDENTIFICATOR DOT_DOT_DOT IDENTIFICATOR { print("Dot dot dot parameter"); }
+  | IDENTIFICATOR DOT_DOT_DOT TESTVAL { print("Dot dot dot parameter"); }
   ;
+
 FUNC_PARAMS : FUNC_PARAMETER_GROUP 
   | FUNC_PARAMS ',' FUNC_PARAMETER_GROUP
   | 
   ;
 
-FUNC_RESULT : TYPE                  { print("Single unnamed function result"); }
+FUNC_RESULT : 
+  TESTVAL                 { print("Single unnamed function result"); }
+//  TYPE                  { print("Single unnamed function result"); }
+//  | IDENTIFICATOR                 { print("Single unnamed function result"); }
   | '(' FUNC_RESULT_NAMED ')'       { print("Multiple named function result"); }
   | '(' FUNC_RESULT_UNNAMED ')'     { print("Multiple unnamed function result"); }
   |
   ;
 
-
-FUNC_RESULT_UNNAMED : TYPE          { print("Type in unnamed function result"); }
-  | FUNC_RESULT_UNNAMED ',' TYPE    { print("Type in unnamed function result"); }
+FUNC_RESULT_UNNAMED : 
+  TESTVAL          { print("Type in unnamed function result"); }
+//  TYPE          { print("Type in unnamed function result"); }
+//  | IDENTIFICATOR
+  | FUNC_RESULT_UNNAMED ',' TESTVAL    { print("Type in unnamed function result"); }
   ;
 
-FUNC_RESULT_NAMED : IDENTIFICATOR TYPE        { print("Type in named function result"); }
-  | FUNC_RESULT_NAMED ',' IDENTIFICATOR TYPE  { print("Type in named function result"); }
+FUNC_RESULT_NAMED :
+  TESTVAL TESTVAL        { print("Type in named function result"); }//QUESTION
+  | FUNC_RESULT_NAMED ',' TESTVAL TESTVAL  { print("Type in named function result"); }//QUESTION
   ;
-
-
-
 
 STATEMENTS : STATEMENT 
   | STATEMENTS  STATEMENT   
@@ -142,21 +155,24 @@ STATEMENT : DECLARATION '\n'
   | RETURN '\n'
   | '\n'
   ;
+
 RETURN :
   RETURN_KEYWORD
   | RETURN_KEYWORD MULTIPLE_IDENT
-  | RETURN_KEYWORD RVALUE //REDUCE/REDUCE
+//  | RETURN_KEYWORD RVALUE //REDUCE/REDUCE
   ;
+
 UNARY_OPERATION : 
-    IDENTIFICATOR INCREMENT
+  IDENTIFICATOR INCREMENT
   | IDENTIFICATOR DECREMENT
   | INCREMENT IDENTIFICATOR
   | DECREMENT IDENTIFICATOR 
   ;
+
 ASSIGNMENT : 
   IDENTIFICATOR '=' RVALUE   { print("Assignment of variable.");  }
   | IDENTIFICATOR ARRAY_INDEXATION  '=' RVALUE { print("Assigment of array element. "); }
- // | POINTER_INDEXATION IDENTIFICATOR   '=' RVALUE { print("Assigment of pointer by address. "); }
+  | '*' IDENTIFICATOR   '=' RVALUE { print("Assigment of pointer by address. "); } //
   
   ;
 FOR :
@@ -166,7 +182,7 @@ FOR :
   ;
 
 FOR_INIT : SHORT_DEFINING       { print("Short defining in For-loop init "); }
-  | ASSIGNMENT                   { print("Assigment in For-loop init "); }
+  | ASSIGNMENT                  { print("Assigment in For-loop init "); }
   |                             { print("Emptyness in For-loop init "); }
   ;
 
@@ -174,6 +190,7 @@ FOR_CONDITION :
   LOGICAL_EXPRESSION    { print("Logical expression in For-loop condition "); }
   |                        { print("Empty logical expression in For-loop condition "); }
   ;
+
 FOR_AFTER :
   ASSIGNMENT          { print("Assignment in For-loop after-block "); }
   | FUNCTION_CALL     { print("Function call in For-loop after-block "); }
@@ -182,7 +199,7 @@ FOR_AFTER :
   ;
 
 DECLARATION: 
-    VAR_KEYWORD VARIABLE_DECLARATION 
+  VAR_KEYWORD VARIABLE_DECLARATION 
   | VAR_KEYWORD VARIABLE_DECLARATION_ASSIGNMENT  { print("Declaration (with assignment) of variable"); }
   | VAR_KEYWORD '(' '\n' MULTIPLE_VARIABLE_DECLARATION  ')' { print("Multiple declaration"); }
   | CONST_KEYWORD VARIABLE_DECLARATION_ASSIGNMENT { print("Declaration (with assignment) of constant "); }
@@ -207,8 +224,7 @@ SWITCH_CASES:
 
 IF_ELSE_STATEMENT: 
   IF_ELSE_IF
-  | IF_ELSE_IF ELSE_KEYWORD '{' STATEMENTS '}'  { print("Else condition"); }
-  
+  | IF_ELSE_IF ELSE_KEYWORD '{' STATEMENTS '}'  { print("Else condition"); } 
   ;
 
 IF_ELSE_IF:
@@ -219,8 +235,6 @@ IF_ELSE_IF:
 CONDITION : IF_KEYWORD LOGICAL_EXPRESSION '{' STATEMENTS '}' 
   | IF_KEYWORD LOGICAL_EXPRESSION '{' '}' 
   ;
-  
-
 
 LOGICAL_EXPRESSION :
   RVALUE RELATION RVALUE        { print("Rvalues relation"); }  
@@ -241,6 +255,21 @@ RELATION : EQ_RELATION
   ;
 
 RVALUE : 
+  VALUE
+  | VALUE '+' RVALUE
+  | VALUE '-' RVALUE
+  | VALUE '*' RVALUE //Создает 2 конфликта сдвиг/свертка с   | FULL_IDENTIFICATOR и   | FULL_IDENTIFICATOR ARRAY_INDEXATION 
+  | VALUE '/' RVALUE 
+  | VALUE '%' RVALUE
+//  | TESTVAL '{' INITIALIZER '}'                            { print("INITIALIZER_testVAL");}
+  | TYPE '{' INITIALIZER '}'                            { print("INITIALIZER");}  
+  | IDENTIFICATOR '{' INITIALIZER '}'                   { print("INITIALIZER2");} 
+  | TYPE '{' FUNCTION_CALL_ARGUMENTS '}'                { print("INITIALIZER3");} 
+  | IDENTIFICATOR '{' FUNCTION_CALL_ARGUMENTS '}'                { print("INITIALIZER4");} 
+//  | TESTVAL '{' FUNCTION_CALL_ARGUMENTS '}'                { print("INITIALIZER_func");} 
+  ;
+
+VALUE:
   INTEGER
   | STRING
   | FLOAT
@@ -248,35 +277,21 @@ RVALUE :
   | COMPLEX
   | FUNCTION_CALL
   | FULL_IDENTIFICATOR
-  | RVALUE '+' RVALUE
-  | RVALUE '-' RVALUE
-  | RVALUE '*' RVALUE
-  | RVALUE '/' RVALUE
-  | RVALUE '%' RVALUE
-  | TYPE '{' INITIALIZER '}' { print("INITIALIZER");} 
   | FULL_IDENTIFICATOR ARRAY_INDEXATION
-  | '&' FULL_IDENTIFICATOR                  { print("Getting address of identificator");}
-  | POINTER_INDEXATION FULL_IDENTIFICATOR
-  
-  ;
-
-INITIALIZER: 
-  FUNCTION_CALL_ARGUMENTS //Для уменьшения избыточности одно и то же правило
-  | INITIALIZER_KEY_VALUES
-  ;
-INITIALIZER_KEY_VALUES:
-  IDENTIFICATOR ':' RVALUE
-  | INITIALIZER_KEY_VALUES ',' IDENTIFICATOR ':' RVALUE
+  | '&' FULL_IDENTIFICATOR                 { print("Getting address of identificator");}
+  | '*' FULL_IDENTIFICATOR
   ;
 
 
-POINTER_INDEXATION:
-  '*' 
-  | POINTER_INDEXATION '*'
+INITIALIZER:
+  IDENTIFICATOR ':' VALUE
+  | INITIALIZER ',' IDENTIFICATOR ':' VALUE
   ;
+
+
 ARRAY_INDEXATION:
-  '[' RVALUE ']'
-  | ARRAY_INDEXATION '[' RVALUE ']'
+  '[' VALUE ']'
+  | ARRAY_INDEXATION '[' VALUE ']'
   ;
 
 
@@ -310,13 +325,21 @@ MULTIPLE_VARIABLE_DECLARATION:
 
  
 VARIABLE_DECLARATION:
-  MULTIPLE_IDENT TYPE  {print("Declaration of variable");}  
+  MULTIPLE_IDENT TESTVAL  {print("Declaration of variable");}  
+//  MULTIPLE_IDENT TYPE  {print("Declaration of variable");}  
+//  | MULTIPLE_IDENT IDENTIFICATOR  {print("Declaration of variable");}  
   ;
 
 VARIABLE_DECLARATION_ASSIGNMENT: 
-  MULTIPLE_IDENT TYPE '='  RVALUE
+  MULTIPLE_IDENT TESTVAL '='  RVALUE
+//  MULTIPLE_IDENT TYPE '='  RVALUE
+//  | MULTIPLE_IDENT IDENTIFICATOR '='  RVALUE
   ;
 
+TESTVAL:
+  TYPE
+  | IDENTIFICATOR
+  ;
 
 
 TYPE: 
@@ -328,11 +351,12 @@ TYPE:
   | FUNC_KEYWORD '(' FUNC_RESULT_UNNAMED ')' TYPE 
   | '[' INTEGER ']' TYPE
   | '[' DOT_DOT_DOT ']' TYPE
-  | '*' TYPE
-  | IDENTIFICATOR
+  | '*' TYPE //Создает конфликт свептка/свертка с ???
+//  | IDENTIFICATOR
   ;
 
-MULTIPLE_IDENT: IDENTIFICATOR 
+MULTIPLE_IDENT: 
+  IDENTIFICATOR 
   | MULTIPLE_IDENT ',' IDENTIFICATOR 
   ;
 
@@ -347,15 +371,3 @@ fprintf(stderr, "%s",  msg);
 
 exit(1);
 }
-
-
-
-
-
-
-
-
-
-
-
-
