@@ -3,389 +3,488 @@
 #include <stdlib.h>
 
 int yylex();
-//extern int yylex();
+extern int line_number;
 void yyerror(char *msg);
 extern void print(char *msg);
 
 %}
 
-%union {
-int num;
-char letter;
-}
+%token identifier
+%token BREAK_KEYWORD CASE_KEYWORD  CHAN_KEYWORD CONST_KEYWORD CONTINUE_KEYWORD DEFAULT_KEYWORD DEFER_KEYWORD ELSE_KEYWORD
+%token FALL_KEYWORD FOR_KEYWORD FUNC_KEYWORD GO_KEYWORD GOTO_KEYWORD IF_KEYWORD IMPORT_KEYWORD INTERFACE_KEYWORD
+%token MAP_KEYWORD PACKAGE_KEYWORD RANGE_KEYWORD RETURN_KEYWORD
+%token SELECT_KEYWORD STRUCT_KEYWORD SWITCH_KEYWORD TYPE_KEYWORD VAR_KEYWORD
 
-%token  IDENTIFICATOR COLON_EQ DOT_DOT_DOT NIL_KEYWORD DEFER_KEYWORD SHIFT_LEFT SHIFT_RIGHT OPER_ASSIGNMENT
-%token STRING INTEGER FLOAT TRUE_FALSE COMPLEX
-%token TYPE_KEYWORD STRUCT_KEYWORD INTERFACE_KEYWORD
-%token CONST_KEYWORD PACKAGE_KEYWORD IMPORT_KEYWORD VAR_KEYWORD  FUNC_KEYWORD RETURN_KEYWORD
-%token IF_KEYWORD ELSE_KEYWORD SWITCH_KEYWORD CASE_KEYWORD DEFAULT_KEYWORD
-%token EQ_RELATION GREATER_RELATION LESS_RELATION EQ_GREATER_RELATION EQ_LESS_RELATION NOT_EQ_RELATION
-%token FOR_KEYWORD BREAK_KEYWORD CONTINUE_KEYWORD RANGE_KEYWORD GO_KEYWORD
-%token INT_TYPE FLOAT_TYPE  COMPLEX_TYPE  BOOL_TYPE STRING_TYPE
+%token INT_TYPE FLOAT_TYPE COMPLEX_TYPE BOOL_TYPE STRING_TYPE
 
-
-
-%left OR_OPERATION AND_OPERATION NOT_OPERATION 
-%left EQ_RELATION GREATER_RELATION LESS_RELATION EQ_GREATER_RELATION EQ_LESS_RELATION NOT_EQ_RELATION
-
+%token int_lit float_lit  bool_lit imaginary_lit string_lit
+%token COLON_EQ DOT_DOT_DOT LEFT_ARROW SHIFT NIL_KEYWORD
+%left LOGICAL_OR
+%left LOGICAL_AND
+%left '!'
+%left EQ_RELATION GREATER_RELATION LESS_RELATION GREATER_EQ_RELATION LESS_EQ_RELATION NOT_EQ_RELATION
+%left INCREMENT DECREMENT
 %left '-' '+' '%'
 %left '*' '/' '|'
 %left '^' '&'
-%left SHIFT_LEFT SHIFT_RIGHT
-
-%nonassoc INCREMENT DECREMENT
-%nonassoc LOWER_THAN_BRACKET
-%nonassoc '[' '(' '{'
+%left SHIFT
 
 %%
 
-S :  PACKAGE  GLOBALS    
+S: SourceFile;
+
+
+SourceFile : 
+  PackageClause ';'  RepeatingTopLevelDecl                        |
+  PackageClause ';'                                               |
+  PackageClause ';'  RepeatingImportDecl                          |
+  PackageClause ';'  RepeatingImportDecl  RepeatingTopLevelDecl   ;
+RepeatingImportDecl: ImportDecl ';' | RepeatingImportDecl ImportDecl ';' ;
+RepeatingTopLevelDecl: TopLevelDecl ';' | RepeatingTopLevelDecl TopLevelDecl ';' ;
+PackageClause  : PACKAGE_KEYWORD PackageName { print("Package Clause"); };
+PackageName    : identifier ;
+
+ImportDecl       : IMPORT_KEYWORD ImportSpec | IMPORT_KEYWORD  '(' ')' | IMPORT_KEYWORD  '(' RepeatingImportSpec ')' ;
+RepeatingImportSpec: ImportSpec ';' | RepeatingImportSpec ImportSpec ';' ;
+ImportSpec       :  '.'  ImportPath |  PackageName ImportPath  ;
+ImportPath       : string_lit ;
+
+
+Declaration : 
+  ConstDecl 
+  | TypeDecl 
+  | VarDecl 
   ;
 
-PACKAGE : 
-  PACKAGE_KEYWORD IDENTIFICATOR  '\n' { print("Package declaration"); }
+TopLevelDecl: 
+  Declaration 
+  | FunctionDecl 
+  | MethodDecl 
   ;
 
-IMPORT : IMPORT_KEYWORD STRING  { print("Single module imported"); }
-  | IMPORT_KEYWORD '(' '\n' IMPORT_MULTIPLE_STRING ')'  { print("Importing modules with brackets"); }
+ConstDecl:
+  CONST_KEYWORD  ConstSpec 
+  | CONST_KEYWORD '('  RepeatingConstSpec  ')'  
+  | CONST_KEYWORD '('  ')'  
   ;
 
-IMPORT_MULTIPLE_STRING :   STRING '\n' IMPORT_MULTIPLE_STRING { print("Module name"); }
-  |
-  ;
-
-GLOBALS : 
-  GLOBAL '\n'
-  | GLOBAL'\n' GLOBALS
-  ;
-
-GLOBAL:
-  | IMPORT  
-  | TYPEDEF
-  | FUNCTION
-  | DECLARATION   { print("Global declaration"); } 
-  ;
-
-RVALUE : 
-  INTEGER   
-  | STRING
-  | FLOAT 
-  | TRUE_FALSE 
-  | COMPLEX 
-  | NIL_KEYWORD 
-  | '(' RVALUE ')' 
-  | RVALUE '+' RVALUE
-  | RVALUE '-' RVALUE
-  | RVALUE '*' RVALUE
-  | RVALUE '/' RVALUE 
-  | RVALUE '%' RVALUE
-  | RVALUE '|' RVALUE
-  | RVALUE '^' RVALUE
-  | RVALUE '&' RVALUE
-  | RVALUE EQ_RELATION RVALUE        { print("Eq relation"); }  
-  | RVALUE GREATER_RELATION RVALUE        { print("GREATER relation"); }  
-  | RVALUE LESS_RELATION RVALUE        { print("LESS relation"); }  
-  | RVALUE EQ_GREATER_RELATION RVALUE        { print("Eq GREATERrelation"); }  
-  | RVALUE EQ_LESS_RELATION RVALUE        { print("Eq LESS relation"); }  
-  | RVALUE NOT_EQ_RELATION RVALUE        { print("NOT Eq relation"); }  
-  | RVALUE AND_OPERATION RVALUE   { print("Logical AND"); }  
-  | RVALUE OR_OPERATION RVALUE    { print("Logincal OR "); }  
-  | NOT_OPERATION RVALUE          { print("Denying expression"); }  
-  | RVALUE SHIFT_LEFT RVALUE
-  | RVALUE SHIFT_RIGHT RVALUE
-  | FULL_IDENTIFICATOR  %prec LOWER_THAN_BRACKET
-  | FULL_IDENTIFICATOR ARRAY_INDEXATION
-  | ADDRESS_INDEXATION IDENTIFICATOR
-  | POINTER_INDEXATION IDENTIFICATOR
-  | FUNCTION_CALL
-  //| TYPE '{' INITIALIZER '}'                            { print("Initializer");}  
-  ;
-
-ASSIGNMENT : 
-  FULL_IDENTIFICATOR '=' RVALUE                                 { print("Assignment of variable.");  }
-  | FULL_IDENTIFICATOR ARRAY_INDEXATION  '=' RVALUE             { print("Assigment of array element. "); }
-  | POINTER_INDEXATION FULL_IDENTIFICATOR   '=' RVALUE          { print("Assigment of pointer by address. "); } //
-  | FULL_IDENTIFICATOR OPER_ASSIGNMENT RVALUE                   { print("Operation + assignment");}
-  ;
-STATEMENTS : STATEMENT 
-  | STATEMENTS '\n' STATEMENT 
-  ;
-STATEMENT : 
-  DECLARATION  
-  | IF_ELSE_STATEMENT 
-  | FUNCTION_CALL 
-  | SWITCH 
- // | 
-  | ASSIGNMENT
-  | UNARY_OPERATION 
-  | FOR 
-  | BREAK_KEYWORD 
-  | CONTINUE_KEYWORD 
-  | RETURN 
-  | '\n'
-  | DEFER_KEYWORD FUNCTION_CALL   { print("Defer function call");}
-  | GO_KEYWORD  FUNCTION_CALL     { print("Starting goroutine"); }
-  ;
-
-INITIALIZER:  // SHIFT/REDUCE
-  INITIALIZER_PAIRS
-  | MULTIPLE_RVALUE
-  ;
-
-INITIALIZER_PAIRS:
-  IDENTIFICATOR ':' RVALUE
-  |  IDENTIFICATOR ':' RVALUE  ',' INITIALIZER_PAIRS 
+RepeatingConstSpec:
+  ConstSpec ';'
+  | RepeatingConstSpec ConstSpec ';'
   ;
 
 
-
-FUNCTION_CALL : 
-  FULL_IDENTIFICATOR '(' FUNCTION_CALL_ARGUMENTS ')'   { print("Function call"); } 
-  | ANON_FUNCTION      '(' FUNCTION_CALL_ARGUMENTS ')'   { print("Anon function call"); } //SHIFT/REDUCE
-  ;
-
-FUNCTION_CALL_ARGUMENTS:
-  MULTIPLE_RVALUE     { print("Multiple rvalue in function call arguments");}
-  |
-  ;
-
-
-FUNCTION : FUNC_KEYWORD IDENTIFICATOR '(' FUNC_PARAMS ')' FUNC_RESULT  '{' FUNCTION_STATEMENTS '}' { print("Function declaration"); }
-  | FUNC_KEYWORD '(' IDENTIFICATOR IDENTIFICATOR ')' IDENTIFICATOR '(' FUNC_PARAMS ')' FUNC_RESULT  '{' FUNCTION_STATEMENTS '}' { print("Method declaration"); }
-  ;
-
-ANON_FUNCTION:
-  FUNC_KEYWORD  '(' FUNC_PARAMS ')' FUNC_RESULT  '{' FUNCTION_STATEMENTS '}'
-  ;
-
-
-FUNCTION_STATEMENTS:
-  STATEMENTS
-  |
-  ;
-
-FUNC_PARAMETER_GROUP :  
-  MULTIPLE_IDENT TYPE { print("Group of parameters"); }
-  | IDENTIFICATOR DOT_DOT_DOT TYPE { print("Dot dot dot parameter"); }
-  ;
-
-FUNC_PARAMS: FUNC_PARAMETER_GROUPS
-  |
-  ;
-FUNC_PARAMETER_GROUPS : FUNC_PARAMETER_GROUP 
-  |  FUNC_PARAMETER_GROUP ',' FUNC_PARAMETER_GROUPS 
-  ;
-
-FUNC_RESULT : 
-  TYPE                              { print("Single unnamed function result"); }
-  | '(' FUNC_RESULT_NAMED ')'       { print("Multiple named function result"); }
-  | '(' FUNC_RESULT_UNNAMED ')'     { print("Multiple unnamed function result"); }
-  |
-  ;
-
-FUNC_RESULT_UNNAMED : 
-  TYPE          { print("Type in unnamed function result"); }
-  | FUNC_RESULT_UNNAMED ',' TYPE    { print("Type in unnamed function result"); }
-  |
-  ;
-
-FUNC_RESULT_NAMED :
-  IDENTIFICATOR TYPE        { print("Type in named function result"); }//QUESTION
-  | FUNC_RESULT_NAMED ',' IDENTIFICATOR TYPE  { print("Type in named function result"); }//QUESTION
-  ;
-
-
-SWITCH :
-  SWITCH_KEYWORD '(' RVALUE ')' '{' '\n' SWITCH_CASES '}'
-  | SWITCH_KEYWORD '(' RVALUE ')' '{' '\n' SWITCH_CASES DEFAULT_KEYWORD ':' STATEMENTS '}' { print("Default case in switch"); }
-  ;
-
-SWITCH_VALUES: 
- SWITCH_VALUES ',' RVALUE
- | RVALUE          
+ConstSpec:
+ IdentifierList 
+ | IdentifierList OptConstSpecFields
  ;
 
-SWITCH_CASES:
-  CASE_KEYWORD SWITCH_VALUES ':' STATEMENTS   { print("Case in switch"); }
-  | SWITCH_CASES  CASE_KEYWORD SWITCH_VALUES ':' STATEMENTS { print("Case in switch"); }
+OptConstSpecFields: 
+  '=' ExpressionList
+  |  Type  '=' ExpressionList
+  ;
+  
+TypeDecl:
+  TYPE_KEYWORD TypeSpec 
+  | TYPE_KEYWORD  '(' RepeatingTypeSpec ')'
+  | TYPE_KEYWORD  '('  ')'
   ;
 
-IF_ELSE_STATEMENT: 
-  IF_ELSE_IF
-  | IF_ELSE_IF ELSE_KEYWORD '{' STATEMENTS '}'  { print("Else condition"); } 
+TypeDef: 
+  identifier  Type 
+ | identifier  TypeParameters  Type 
+ ;
+
+
+RepeatingTypeSpec:
+  TypeSpec ';'
+  | RepeatingTypeSpec TypeSpec ';'
   ;
 
-IF_ELSE_IF:
-  CONDITION                                              { print("Simple condition"); }  
-  | IF_ELSE_IF ELSE_KEYWORD CONDITION           { print("Else-if condition"); }
-  ;
+TypeSpec: AliasDecl | TypeDef  ;
 
-CONDITION : IF_KEYWORD RVALUE '{' STATEMENTS '}' 
-  | IF_KEYWORD RVALUE '{' '}' 
-  ;
+AliasDecl: identifier '=' Type ;
 
-FOR :
-  FOR_KEYWORD FOR_INIT ';' FOR_CONDITION ';' FOR_AFTER '{' STATEMENTS '}' { print("For-loop"); }
-  | FOR_KEYWORD  FOR_CONDITION '{' STATEMENTS '}'                         { print("Shortened for-loop"); }
-  | FOR_KEYWORD IDENTIFICATOR ',' IDENTIFICATOR COLON_EQ RANGE_KEYWORD IDENTIFICATOR '{' STATEMENTS '}' { print("For in range loop"); }
-  ;
+TypeParameters:  '[' TypeParamList  ']' | '[' TypeParamList ',' ']'  ;
 
-FOR_INIT : SHORT_DEFINING       { print("Short defining in For-loop init "); }
-  | ASSIGNMENT                  { print("Assigment in For-loop init "); }
-  |                             { print("Emptyness in For-loop init "); }
-  ;
-
-FOR_CONDITION :
-  RVALUE    { print("Logical expression in For-loop condition "); }
-  |                        { print("Empty logical expression in For-loop condition "); }
-  ;
-
-FOR_AFTER :
-  STATEMENT
-  |                   { print("Emptyness in For-loop after-block "); }
-  ;
+TypeParamList: RepeatingTypeParamDecl ;
 
 
+RepeatingTypeParamDecl: RepeatingTypeParamDecl ',' TypeParamDecl | TypeParamDecl  ;
 
+TypeParamDecl: IdentifierList TypeConstraint ;
 
+TypeConstraint: TypeElem ;
 
-UNARY_OPERATION : 
-  IDENTIFICATOR INCREMENT
-  | IDENTIFICATOR DECREMENT
-  | INCREMENT IDENTIFICATOR
-  | DECREMENT IDENTIFICATOR 
-  ;
-
-
-DECLARATION: 
-  VAR_KEYWORD VARIABLE_DECLARATION 
-  | VAR_KEYWORD VARIABLE_DECLARATION_ASSIGNMENT  { print("Declaration (with assignment) of variable"); }
-  | VAR_KEYWORD '('  MULTIPLE_VARIABLE_DECLARATION  ')' { print("Multiple declaration"); }
-  | CONST_KEYWORD VARIABLE_DECLARATION_ASSIGNMENT { print("Declaration (with assignment) of constant "); }
-  | SHORT_DEFINING { print("Short defining"); }  
-  ;
-
-SHORT_DEFINING:
-  IDENTIFICATOR COLON_EQ RVALUE
-  | VAR_KEYWORD IDENTIFICATOR '=' RVALUE
-  ;
-
-MULTIPLE_VARIABLE_DECLARATION:
-  VARIABLE_DECLARATION 
-  | VARIABLE_DECLARATION_ASSIGNMENT
-  | IDENTIFICATOR '=' MULTIPLE_RVALUE
-  | MULTIPLE_VARIABLE_DECLARATION  VARIABLE_DECLARATION
-  | MULTIPLE_VARIABLE_DECLARATION  VARIABLE_DECLARATION_ASSIGNMENT 
-  | MULTIPLE_VARIABLE_DECLARATION  IDENTIFICATOR '=' MULTIPLE_RVALUE
-  | MULTIPLE_VARIABLE_DECLARATION '\n'
-  | '\n'
-  ; 
-
-
+IdentifierList : identifier | IdentifierList ',' identifier;
  
-VARIABLE_DECLARATION:
-  MULTIPLE_IDENT TYPE  {print("Declaration of variable");}  
+ExpressionList: Expression | ExpressionList ',' Expression ;
+
+VarDecl: 
+  VAR_KEYWORD  '(' RepeatingVarSpec')'
+  | VAR_KEYWORD '(' ')'
+  | VAR_KEYWORD  VarSpec
+  ;
+RepeatingVarSpec: VarSpec ';' | RepeatingVarSpec VarSpec ';' ;
+
+VarSpec: 
+  IdentifierList  '=' ExpressionList 
+  | IdentifierList  Type 
+  | IdentifierList  Type  '=' ExpressionList 
   ;
 
-VARIABLE_DECLARATION_ASSIGNMENT: 
-  MULTIPLE_IDENT TYPE '='  MULTIPLE_RVALUE
+ShortVarDecl: IdentifierList COLON_EQ ExpressionList ;
+
+FunctionDecl:
+  FUNC_KEYWORD FunctionName Signature 
+  | FUNC_KEYWORD FunctionName Signature  FunctionBody 
+  | FUNC_KEYWORD FunctionName TypeParameters Signature 
+  | FUNC_KEYWORD FunctionName TypeParameters Signature  FunctionBody 
+  ;
+FunctionName: identifier ;
+FunctionBody:Block ;
+
+MethodDecl: 
+  FUNC_KEYWORD Receiver MethodName Signature 
+  FUNC_KEYWORD Receiver MethodName Signature  FunctionBody 
+
+Receiver: Parameters ;
+
+FunctionType: FUNC_KEYWORD Signature ;
+
+Signature:
+  Parameters 
+  | Parameters  Result 
+  ;
+Result : 
+  Parameters 
+  | Type 
+  ;
+Parameters:
+   '('  ')' 
+   | '(' ParameterList ')' 
+   | '(' ParameterList ','   ')' 
+   ;
+ParameterList:
+  ParameterDecl
+  | ParameterList ',' ParameterDecl 
+  ;
+ParameterDecl:
+  Type 
+  | DOT_DOT_DOT  Type 
+  | IdentifierList Type 
+  | IdentifierList  DOT_DOT_DOT Type 
   ;
 
 
-
-RETURN :
-  RETURN_KEYWORD
-  | RETURN_KEYWORD MULTIPLE_RVALUE 
+InterfaceType:
+  INTERFACE_KEYWORD '{' '}'
+  | INTERFACE_KEYWORD '{' RepeatingInterfaceElem '}'
   ;
-MULTIPLE_RVALUE:
-  MULTIPLE_RVALUE ','  RVALUE 
-  | RVALUE
-  ;
-
-ARRAY_INDEXATION:
-  '[' RVALUE ']'
-  | '[' RVALUE ']' ARRAY_INDEXATION 
+RepeatingInterfaceElem:
+  InterfaceElem ';'
+  | RepeatingInterfaceElem InterfaceElem ';'
   ;
 
-ADDRESS_INDEXATION:
-  '&'
-  | '&' ADDRESS_INDEXATION 
+InterfaceElem: MethodElem 
+  | TypeElem 
+  ;
+MethodElem: MethodName Signature ;
+MethodName: identifier;
+TypeElem:  
+  TypeTerm
+  | TypeElem '|' TypeTerm
+  ;
+TypeTerm :
+  Type 
+  | UnderlyingType 
+  ;
+UnderlyingType : '~' Type ;
+
+
+MapType: MAP_KEYWORD '[' KeyType ']' ElementType ;
+KeyType: Type ;
+
+ChannelType:
+  CHAN_KEYWORD  ElementType 
+  | CHAN_KEYWORD LEFT_ARROW  ElementType 
+  | LEFT_ARROW CHAN_KEYWORD  ElementType 
+  ;
+
+Statement :
+	Declaration | LabeledStmt | SimpleStmt |
+	GoStmt | ReturnStmt | BreakStmt | ContinueStmt | GotoStmt |
+	FallthroughStmt | Block | IfStmt | SwitchStmt | SelectStmt | // ForStmt |
+	DeferStmt ;
+
+SimpleStmt : EmptyStmt | ExpressionStmt | SendStmt | IncDecStmt | Assignment | ShortVarDecl ;
+
+EmptyStmt : ;
+LabeledStmt : Label ':' Statement ;
+Label : identifier ;
+ExpressionStmt : Expression ;
+SendStmt : Channel LEFT_ARROW Expression ;
+Channel  : Expression ;
+IncDecStmt : Expression  INCREMENT   | Expression  DECREMENT   ;
+Assignment : ExpressionList assign_op ExpressionList ;
+assign_op : add_op  '='|  mul_op  '=' ;
+
+IfStmt : 
+  IF_KEYWORD  Expression Block                                                |
+  IF_KEYWORD  Expression Block  ELSE_KEYWORD IfStmtAfterElse                  |
+  IF_KEYWORD  SimpleStmt ';'  Expression Block                                |
+  IF_KEYWORD SimpleStmt ';'  Expression Block  ELSE_KEYWORD IfStmtAfterElse   ;
+
+IfStmtAfterElse: IfStmt | Block ;
+
+SwitchStmt : ExprSwitchStmt ; //| TypeSwitchStmt ;
+
+ExprSwitchStmt : 
+  SWITCH_KEYWORD AfterSwitchKeyWord '{'  '}'  |
+  SWITCH_KEYWORD AfterSwitchKeyWord '{' RepeatingExprCaseClause '}'  
+  ;
+
+AfterSwitchKeyWord:
+  SimpleStmt ';'
+  | Expression
+  | SimpleStmt ';' Expression
+  |
+  ;
+
+RepeatingExprCaseClause:
+  ExprCaseClause
+  | RepeatingExprCaseClause ExprCaseClause
+  ;
+
+ExprCaseClause : ExprSwitchCase ':' StatementList ;
+ExprSwitchCase : CASE_KEYWORD ExpressionList | DEFAULT_KEYWORD ;
+/*
+TypeSwitchStmt  : 
+  SWITCH_KEYWORD  TypeSwitchGuard '{'  '}' |
+  SWITCH_KEYWORD  SimpleStmt ';'  TypeSwitchGuard '{'  '}' |
+  SWITCH_KEYWORD  TypeSwitchGuard '{' RepeatingExprCaseClause '}' | ////?????????????????????????
+  SWITCH_KEYWORD  SimpleStmt ';'  TypeSwitchGuard '{' RepeatingExprCaseClause '}' | ////?????????????????????????
+
+  ;
+TypeSwitchGuard : PrimaryExpr '.' '(' TYPE_KEYWORD ')' |  identifier COLON_EQ  PrimaryExpr '.' '(' TYPE_KEYWORD ')' ;
+TypeCaseClause  : TypeSwitchCase ':' StatementList ;
+TypeSwitchCase  :  CASE_KEYWORD ExpressionList | DEFAULT_KEYWORD ;
+
+*/
+
+/*
+ForStmt : 
+  FOR_KEYWORD  Block |
+  FOR_KEYWORD FOR_START Block ;
+FOR_START: Condition | ForClause | RangeClause ;
+Condition : Expression ;
+
+ForClause : 
+  ';' ';'                                 |
+  ';'';'  PostStmt                        |
+  ';' Condition ';'                       |
+  ';' Condition ';' PostStmt              |
+  InitStmt ';' ';'                        |
+  InitStmt ';'  ';'  PostStmt             |
+  InitStmt ';'  Condition  ';'            |
+  InitStmt ';'  Condition  ';'  PostStmt  ;
+InitStmt : SimpleStmt ;
+PostStmt : SimpleStmt ;
+
+RangeClause : OptRangeClause RANGE_KEYWORD Expression ;
+
+OptRangeClause:
+  ExpressionList '='
+  | IdentifierList COLON_EQ 
+  |
+  ;
+*/
+GoStmt : GO_KEYWORD Expression ;
+
+SelectStmt : SELECT_KEYWORD '{' '}' | SELECT_KEYWORD '{' RepeatingCommClause '}' ;
+RepeatingCommClause: CommClause | RepeatingCommClause CommClause ;
+CommClause : CommCase ':' StatementList ;
+CommCase   : CASE_KEYWORD SendStmt | CASE_KEYWORD  RecvStmt| DEFAULT_KEYWORD ;
+RecvStmt   : ExpressionList '=' RecvExpr| IdentifierList COLON_EQ RecvExpr ;
+RecvExpr   : Expression ;
+
+ReturnStmt : RETURN_KEYWORD ExpressionList  | RETURN_KEYWORD ;
+BreakStmt  : BREAK_KEYWORD  Label  | BREAK_KEYWORD ;
+ContinueStmt: CONTINUE_KEYWORD Label | CONTINUE_KEYWORD ;
+GotoStmt:       GOTO_KEYWORD Label      | GOTO_KEYWORD ;
+FallthroughStmt : FALL_KEYWORD;
+DeferStmt : DEFER_KEYWORD Expression ;
+
+
+
+Type:
+  TypeName OptTypeArgs
+  | TypeLit
+  | '(' Type ')'
+  ;
+
+TypeName:
+  identifier
+  | QualifiedIdent
+  ;
+
+OptTypeArgs:
+  TypeArgs
+  |
   ;
 
 
-POINTER_INDEXATION:
-  '*'
-  | '*' POINTER_INDEXATION
+TypeArgs:
+  '[' TypeList ',' ']'
+  | '[' TypeList  ']'
+  ;
+
+TypeList:
+  Type
+  | TypeList ',' Type
   ;
 
 
-
-
-TYPE:
-  INT_TYPE
-  | FLOAT_TYPE
-  | COMPLEX_TYPE
-  | BOOL_TYPE
+TypeLit:
+  ArrayType
+  | StructType
+  | PointerType 
+  | FunctionType 
+  | InterfaceType
+  | SliceType 
+  | MapType
+  | ChannelType
+  | INT_TYPE 
+  | FLOAT_TYPE 
+  | COMPLEX_TYPE 
+  | BOOL_TYPE 
   | STRING_TYPE
-  //| FUNC_KEYWORD '(' FUNC_RESULT_UNNAMED ')' TYPE 
-  | '[' INTEGER ']' TYPE            { print("Array type");  }
-  | '[' ']' TYPE                    { print("Array type");  }
-  | '*' TYPE                        { print("Pointer type");}
-  | IDENTIFICATOR   
+  ;
+
+ArrayType   : '[' ArrayLength ']' ElementType ;
+ArrayLength : Expression ;
+ElementType : Type ;
+
+SliceType : '['  ']' ElementType ;
+
+StructType    : 
+  STRUCT_KEYWORD '{'  '}' 
+  | STRUCT_KEYWORD '{' RepeatingFieldDecl '}' 
+  ;
+
+RepeatingFieldDecl:
+  FieldDecl ';'
+  | RepeatingFieldDecl FieldDecl ';'
+  ;
+FieldDecl :
+  IdentifierList Type
+  | EmbeddedField
+  | IdentifierList Type Tag
+  | EmbeddedField Tag
+  ;
+EmbeddedField : 
+  TypeName
+  | TypeName TypeArgs
+  | '*' TypeName 
+  | '*' TypeName TypeArgs
+  ;
+
+Tag : string_lit;
+
+PointerType : '*' BaseType ;
+BaseType : Type ; 
+
+
+Block : 
+  '{' StatementList '}' 
+  ;
+StatementList:
+  RepeatingStatementList
+  |
+  ;
+RepeatingStatementList :
+  Statement ';'
+  | RepeatingStatementList ';'
+  ;
+
+Operand  : Literal | OperandName | OperandName  TypeArgs  | '(' Expression  ')' ;
+Literal  : BasicLit | CompositeLit | FunctionLit ;
+BasicLit : int_lit | float_lit | bool_lit | imaginary_lit |  string_lit  | NIL_KEYWORD;
+OperandName : identifier  | QualifiedIdent   ;
+
+QualifiedIdent : PackageName '.' identifier ;
+
+CompositeLit : LiteralType LiteralValue ;
+LiteralType   : StructType | ArrayType | '[' DOT_DOT_DOT ']' ElementType |
+                SliceType | MapType | TypeName   | TypeName  TypeArgs ;
+LiteralValue  : '{' '}' | '{'  ElementList  '}' | '{'  ElementList ','  '}';
+ElementList   : KeyedElement | ElementList ',' KeyedElement ;
+KeyedElement  :  Element |  Key ':'  Element ;
+Key           : FieldName | Expression | LiteralValue ;
+FieldName    : identifier ;
+Element      : Expression | LiteralValue ;
+
+FunctionLit : FUNC_KEYWORD Signature FunctionBody ;
+
+PrimaryExpr :
+	Operand |
+	Conversion |
+	MethodExpr |
+	PrimaryExpr Selector |
+	PrimaryExpr Index |
+	PrimaryExpr Slice |
+	PrimaryExpr TypeAssertion |
+	PrimaryExpr Arguments 
+  ;
+
+Selector : '.' identifier ;
+Index : '[' Expression ']' ;
+Slice : '['  ':'  ']' |
+        '['  ':'  Expression  ']' |
+        '['  Expression  ':'  ']' |
+        '['  Expression  ':'  Expression  ']' |
+        '['  ':' Expression ':' Expression ']' |
+        '['  Expression  ':' Expression ':' Expression ']' 
+      ;
+
+TypeAssertion : '.' '(' Type ')' ;
+
+Arguments  : 
+  '(' ')'
+  | '('   ExpressionList  ArgumentsAppendix ')'
+  | '('   Type   ArgumentsAppendix ')'
+  | '('   Type  ',' ExpressionList   ArgumentsAppendix ')'
   ;
 
 
-TYPEDEF:
-  TYPE_KEYWORD IDENTIFICATOR TYPE   { print("Type definition"); }
-  | TYPE_KEYWORD IDENTIFICATOR STRUCT_KEYWORD '{' STRUCT_FIELDS '}' { print("Struct definition"); }
-  | TYPE_KEYWORD IDENTIFICATOR INTERFACE_KEYWORD '{' INTERFACE_FIELDS '}' { print("Interface definition"); }
-  ;
-INTERFACE_FIELDS:
-  INTERFACE_FIELDS INTERFACE_FIELD '\n'
+ArgumentsAppendix:
+  DOT_DOT_DOT
+  | ','
+  | DOT_DOT_DOT ','
   |
   ;
 
-INTERFACE_FIELD: 
-  IDENTIFICATOR '(' INTERFACE_METHOD_ARGS')' FUNC_RESULT { print("Interface method "); }
-  | IDENTIFICATOR { print("Inner interface "); }
-  |
-  ;
-
-INTERFACE_METHOD_ARGS:
-  TYPE
-  | INTERFACE_METHOD_ARGS ',' TYPE
-  |
-  ;
-
-STRUCT_FIELDS:
-  STRUCT_FIELDS  STRUCT_FIELD '\n'
-  |
-  ;
-
-STRUCT_FIELD: 
-  MULTIPLE_IDENT TYPE 
-  |
-  ;
-
-MULTIPLE_IDENT:
-  IDENTIFICATOR
-  | IDENTIFICATOR ',' MULTIPLE_IDENT
-  ;
+MethodExpr: ReceiverType '.' MethodName ;
+ReceiverType : Type ;
 
 
-FULL_IDENTIFICATOR:
-  IDENTIFICATOR
-  |  IDENTIFICATOR  '.' FULL_IDENTIFICATOR
-  ;
+Expression : UnaryExpr | Expression binary_op Expression ;
+UnaryExpr  : PrimaryExpr | unary_op UnaryExpr ;
 
+binary_op  : LOGICAL_AND | LOGICAL_OR | rel_op |  mul_op ;
+rel_op     : EQ_RELATION GREATER_RELATION LESS_RELATION GREATER_EQ_RELATION LESS_EQ_RELATION NOT_EQ_RELATION
+mul_op     :  '/' | '%' | SHIFT | '&';
+add_op     : '+' | '-' | '!' | '^' ;
+unary_op   : '+' | '-' | '!' | '^' | '*' | '&' | LEFT_ARROW;
 
+Conversion : Type '(' Expression  ')' | Type '(' Expression ',' ')' ;
 
 %%
 
 
 
 void yyerror(char * msg) {
-fprintf(stderr, "%s",  msg);
+fprintf(stderr, "(line %d) %s",  line_number, msg);
 
 exit(1);
 }
