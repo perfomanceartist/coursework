@@ -14,7 +14,7 @@ int num;
 char letter;
 }
 
-%token  IDENTIFICATOR COLON_EQ DOT_DOT_DOT NIL_KEYWORD DEFER_KEYWORD SHIFT_LEFT SHIFT_RIGHT OPER_ASSIGNMENT
+%token  IDENTIFICATOR COLON_EQ DOT_DOT_DOT NIL_KEYWORD DEFER_KEYWORD SHIFT_LEFT SHIFT_RIGHT OPER_ASSIGNMENT MAP_KEYWORD
 %token STRING INTEGER FLOAT TRUE_FALSE COMPLEX
 %token TYPE_KEYWORD STRUCT_KEYWORD INTERFACE_KEYWORD
 %token CONST_KEYWORD PACKAGE_KEYWORD IMPORT_KEYWORD VAR_KEYWORD  FUNC_KEYWORD RETURN_KEYWORD
@@ -24,10 +24,11 @@ char letter;
 %token INT_TYPE FLOAT_TYPE  COMPLEX_TYPE  BOOL_TYPE STRING_TYPE
 
 
+%left LOWER_THAN_RELATION
 %left OR_OPERATION
 %left AND_OPERATION
 %left NOT_OPERATION
-
+%left EQ_RELATION GREATER_RELATION LESS_RELATION EQ_GREATER_RELATION EQ_LESS_RELATION NOT_EQ_RELATION
 %left '-' '+' '%'
 %left '*' '/' '|'
 %left '^' '&'
@@ -38,7 +39,12 @@ char letter;
 
 %%
 
-S :  PACKAGE  '\n' GLOBALS ;
+S :  BEFORE_PACKAGE PACKAGE  '\n' GLOBALS ;
+
+BEFORE_PACKAGE:
+  BEFORE_PACKAGE '\n'
+  |
+  ;
 
 PACKAGE : 
   PACKAGE_KEYWORD IDENTIFICATOR                            { print("Package declaration"); } ;    
@@ -47,10 +53,16 @@ IMPORT : IMPORT_KEYWORD STRING                                  { print("Single 
   | IMPORT_KEYWORD '(' '\n' IMPORT_MULTIPLE_STRING ')'          { print("Importing modules with brackets"); }
   ;
 
-IMPORT_MULTIPLE_STRING :   STRING '\n' IMPORT_MULTIPLE_STRING   { print("Module name"); }
+IMPORT_MULTIPLE_STRING :   
+  IMPORT_MULTIPLE_FIELD  { print("Module name"); }
+  | IMPORT_MULTIPLE_STRING IMPORT_MULTIPLE_FIELD { print("Module name"); }
   |
   ;
-
+IMPORT_MULTIPLE_FIELD:
+  STRING
+  | '\n'
+//  |
+  ;
 GLOBALS : 
   GLOBAL
   | GLOBALS '\n' GLOBAL
@@ -67,7 +79,7 @@ GLOBAL:
 
 TYPEDEF:
   TYPE_KEYWORD TYPEVAL TYPEVAL     { print("Extra type definition"); }// QUESTION
-  | TYPE_KEYWORD IDENTIFICATOR STRUCT_KEYWORD '{' STRUCT_FIELDS '}' { print("Struct definition"); }
+ // | TYPE_KEYWORD IDENTIFICATOR STRUCT_KEYWORD '{' STRUCT_FIELDS '}' { print("Struct definition"); }
   | TYPE_KEYWORD IDENTIFICATOR INTERFACE_KEYWORD '{' INTERFACE_FIELDS '}' { print("Interface definition"); }
   ;
 
@@ -89,7 +101,8 @@ INTERFACE_METHOD_ARGS:
   ;
 
 STRUCT_FIELDS:
-  STRUCT_FIELDS  STRUCT_FIELD '\n'
+  STRUCT_FIELD '\n'
+  |STRUCT_FIELDS  STRUCT_FIELD '\n'
   |
   ;
 
@@ -99,7 +112,8 @@ STRUCT_FIELD:
   ;
 
 FUNCTION : FUNC_KEYWORD IDENTIFICATOR '(' FUNC_PARAMS ')' FUNC_RESULT  '{' FUNCTION_STATEMENTS '}' { print("Function declaration"); }
-  | FUNC_KEYWORD '(' TYPEVAL TYPEVAL ')' IDENTIFICATOR '(' FUNC_PARAMS ')' FUNC_RESULT  '{' FUNCTION_STATEMENTS '}' { print("Method declaration"); }//QUESTION ?!?!??!?!??!
+//  | FUNC_KEYWORD '(' TYPEVAL TYPEVAL ')' IDENTIFICATOR '(' FUNC_PARAMS ')' FUNC_RESULT  '{' FUNCTION_STATEMENTS '}' { print("Method declaration"); }//QUESTION
+  | FUNC_KEYWORD '(' IDENTIFICATOR TYPE ')' IDENTIFICATOR '(' FUNC_PARAMS ')' FUNC_RESULT  '{' FUNCTION_STATEMENTS '}' { print("Method declaration"); }//QUESTION 
   ;
 
 ANON_FUNCTION:
@@ -113,7 +127,9 @@ FUNCTION_STATEMENTS:
   ;
 
 FUNC_PARAMETER_GROUP :  
-  MULTIPLE_IDENT TYPEVAL { print("Group of parameters"); }
+  //MULTIPLE_IDENT TYPEVAL { print("Group of parameters"); }
+  MULTIPLE_IDENT TYPE { print("Group of parameters"); }
+  | MULTIPLE_IDENT FULL_IDENTIFICATOR { print("Group of parameters"); }
   | IDENTIFICATOR DOT_DOT_DOT TYPEVAL { print("Dot dot dot parameter"); }
   ;
 
@@ -174,7 +190,7 @@ UNARY_OPERATION :
   ;
 
 ASSIGNMENT : 
-  FULL_IDENTIFICATOR '=' RVALUE   { print("Assignment of variable.");  }
+  MULTIPLE_IDENT '=' MULTIPLE_RVALUE   { print("Assignment of variable.");  }
   | FULL_IDENTIFICATOR ARRAY_INDEXATION  '=' RVALUE { print("Assigment of array element. "); }
   | '*' FULL_IDENTIFICATOR   '=' RVALUE { print("Assigment of pointer by address. "); } //
   | FULL_IDENTIFICATOR OPER_ASSIGNMENT RVALUE  { print("Operation + assignment");}
@@ -182,7 +198,7 @@ ASSIGNMENT :
 FOR :
   FOR_KEYWORD FOR_INIT ';' FOR_CONDITION ';' FOR_AFTER '{' STATEMENTS '}' { print("For-loop"); }
   | FOR_KEYWORD  FOR_CONDITION '{' STATEMENTS '}'                         { print("Shortened for-loop"); }
-  | FOR_KEYWORD IDENTIFICATOR ',' IDENTIFICATOR COLON_EQ RANGE_KEYWORD IDENTIFICATOR '{' STATEMENTS '}' { print("For in range loop"); }
+  | FOR_KEYWORD MULTIPLE_IDENT COLON_EQ RANGE_KEYWORD FULL_IDENTIFICATOR '{' STATEMENTS '}' { print("For in range loop"); }
   ;
 
 FOR_INIT : SHORT_DEFINING       { print("Short defining in For-loop init "); }
@@ -238,28 +254,22 @@ IF_ELSE_IF:
 
 CONDITION : IF_KEYWORD LOGICAL_EXPRESSION '{' STATEMENTS '}' 
   | IF_KEYWORD LOGICAL_EXPRESSION '{' '}' 
+  | IF_KEYWORD SHORT_DEFINING ';' LOGICAL_EXPRESSION '{' '}'
+  | IF_KEYWORD SHORT_DEFINING ';' LOGICAL_EXPRESSION '{' STATEMENTS '}'
+  | IF_KEYWORD ASSIGNMENT ';' LOGICAL_EXPRESSION '{' '}'
+  | IF_KEYWORD ASSIGNMENT ';' LOGICAL_EXPRESSION '{' STATEMENTS '}'
   ;
 
 LOGICAL_EXPRESSION :
-  RVALUE RELATION RVALUE        { print("Rvalues relation"); }  
-  | NOT_OPERATION LOGICAL_EXPRESSION      { print("Denying expression"); }  
-  | TRUE_FALSE                  { print("True/False relation operand"); }  
-  | FUNCTION_CALL               { print("Function call in relation"); }  
-  | LOGICAL_EXPRESSION AND_OPERATION LOGICAL_EXPRESSION   { print("Logical AND"); }  
-  | LOGICAL_EXPRESSION OR_OPERATION LOGICAL_EXPRESSION   { print("Logincal OR "); }  
-  | '(' LOGICAL_EXPRESSION ')'                    
-  ;
-
-RELATION : EQ_RELATION 
-  | GREATER_RELATION 
-  | LESS_RELATION 
-  | EQ_GREATER_RELATION 
-  | EQ_LESS_RELATION 
-  | NOT_EQ_RELATION
+  
+    LOGICAL_EXPRESSION AND_OPERATION LOGICAL_EXPRESSION   { print("Logical AND"); }  
+  | LOGICAL_EXPRESSION OR_OPERATION LOGICAL_EXPRESSION    { print("Logincal OR "); }  
+  //| '(' LOGICAL_EXPRESSION ')'
+  | RVALUE                  
   ;
 
 RVALUE : 
-  VALUE
+  VALUE %prec LOWER_THAN_RELATION  
   | VALUE '+' RVALUE
   | VALUE '-' RVALUE
   | VALUE '*' RVALUE 
@@ -268,13 +278,23 @@ RVALUE :
   | VALUE '|' RVALUE
   | VALUE '^' RVALUE
   | VALUE '&' RVALUE
+  | RVALUE GREATER_RELATION VALUE                          { print("Rvalues relation"); }  
+  | RVALUE LESS_RELATION VALUE                           { print("Rvalues relation"); }  
+  | RVALUE EQ_RELATION VALUE                             { print("Rvalues relation"); }  
+  | RVALUE EQ_LESS_RELATION VALUE                        { print("Rvalues relation"); }  
+  | RVALUE EQ_GREATER_RELATION VALUE                     { print("Rvalues relation"); }  
+  | RVALUE NOT_EQ_RELATION VALUE                         { print("Rvalues nq relation"); }  
   | VALUE SHIFT_LEFT RVALUE
   | VALUE SHIFT_RIGHT RVALUE
+  | NOT_OPERATION RVALUE                      { print("Denying expression"); }  
   | TYPE '{' INITIALIZER '}'                            
+//  | '&' TYPE '{' INITIALIZER '}'                            
   | IDENTIFICATOR '{' INITIALIZER '}'                   
   | TYPE '{' FUNCTION_CALL_ARGUMENTS '}'                
   | IDENTIFICATOR '{' FUNCTION_CALL_ARGUMENTS '}'      
   | ANON_FUNCTION   
+  | '(' RVALUE ')'
+  | '&' RVALUE
   ;
 
 VALUE:
@@ -287,8 +307,8 @@ VALUE:
   | FUNCTION_CALL
   | FULL_IDENTIFICATOR
   | FULL_IDENTIFICATOR ARRAY_INDEXATION
-  | '&' FULL_IDENTIFICATOR                 { print("Getting address of identificator");}
-  | '*' FULL_IDENTIFICATOR
+//  | '&' FULL_IDENTIFICATOR            { print("Getting address of identificator");}
+  | '*' FULL_IDENTIFICATOR            { print("*FULL");}
   ;
 
 
@@ -304,7 +324,12 @@ ARRAY_INDEXATION:
   ;
 
 
+
 FUNCTION_CALL : 
+  TEST_CALL
+  | FUNCTION_CALL '.' TEST_CALL
+  ;
+TEST_CALL :
   FULL_IDENTIFICATOR '(' FUNCTION_CALL_ARGUMENTS ')'   { print("Function call"); } 
   | ANON_FUNCTION      '(' FUNCTION_CALL_ARGUMENTS ')'   { print("Anon function call"); }
   ;
@@ -321,8 +346,8 @@ FUNCTION_CALL_ARGUMENTS :
   ;
 
 SHORT_DEFINING:
-  IDENTIFICATOR COLON_EQ RVALUE
-  | VAR_KEYWORD IDENTIFICATOR '=' RVALUE
+  MULTIPLE_IDENT COLON_EQ MULTIPLE_RVALUE
+  | VAR_KEYWORD MULTIPLE_IDENT '=' MULTIPLE_RVALUE
   ;
 
 MULTIPLE_VARIABLE_DECLARATION:
@@ -352,7 +377,7 @@ MULTIPLE_RVALUE:
 
 TYPEVAL:
   TYPE
-  | IDENTIFICATOR
+//  | IDENTIFICATOR
   ;
 
 
@@ -362,16 +387,19 @@ TYPE:
   | COMPLEX_TYPE
   | BOOL_TYPE
   | STRING_TYPE
+  | MAP_KEYWORD '[' TYPE ']' TYPE
   | FUNC_KEYWORD '(' FUNC_RESULT_UNNAMED ')' TYPE 
   | '[' INTEGER ']' TYPE
   | '[' DOT_DOT_DOT ']' TYPE
   | '[' ']' TYPE
   | '*' TYPE //Создает конфликт свептка/свертка с ???
+  | FULL_IDENTIFICATOR
+  | STRUCT_KEYWORD '{' STRUCT_FIELDS '}' { print("Struct definition"); }
   ;
 
 MULTIPLE_IDENT: 
-  IDENTIFICATOR 
-  | MULTIPLE_IDENT ',' IDENTIFICATOR 
+  FULL_IDENTIFICATOR 
+  | MULTIPLE_IDENT ',' FULL_IDENTIFICATOR 
   ;
 
 
