@@ -29,25 +29,25 @@ char letter;
 %left NOT_OPERATION
 
 %left '-' '+' '%'
-%left '*' '/'
+%left '*' '/' '|'
+%left '^' '&'
+%left SHIFT_LEFT SHIFT_RIGHT
 
 %nonassoc INCREMENT DECREMENT
 
 
 %%
 
-S :  PACKAGE  '\n' GLOBALS    
-  ;
+S :  PACKAGE  '\n' GLOBALS ;
 
 PACKAGE : 
-  PACKAGE_KEYWORD IDENTIFICATOR  { print("Package declaration"); }
+  PACKAGE_KEYWORD IDENTIFICATOR                            { print("Package declaration"); } ;    
+
+IMPORT : IMPORT_KEYWORD STRING                                  { print("Single module imported"); }
+  | IMPORT_KEYWORD '(' '\n' IMPORT_MULTIPLE_STRING ')'          { print("Importing modules with brackets"); }
   ;
 
-IMPORT : IMPORT_KEYWORD STRING  { print("Single module imported"); }
-  | IMPORT_KEYWORD '(' '\n' IMPORT_MULTIPLE_STRING ')'  { print("Importing modules with brackets"); }
-  ;
-
-IMPORT_MULTIPLE_STRING :   STRING '\n' IMPORT_MULTIPLE_STRING { print("Module name"); }
+IMPORT_MULTIPLE_STRING :   STRING '\n' IMPORT_MULTIPLE_STRING   { print("Module name"); }
   |
   ;
 
@@ -60,13 +60,13 @@ GLOBAL:
   FUNCTION
   | IMPORT
   | TYPEDEF
-  | DECLARATION   { print("Global declaration"); } 
+  | DECLARATION   
   | 
   ;
 
 
 TYPEDEF:
-  TYPE_KEYWORD TESTVAL TESTVAL     { print("Extra type definition"); }// QUESTION
+  TYPE_KEYWORD TYPEVAL TYPEVAL     { print("Extra type definition"); }// QUESTION
   | TYPE_KEYWORD IDENTIFICATOR STRUCT_KEYWORD '{' STRUCT_FIELDS '}' { print("Struct definition"); }
   | TYPE_KEYWORD IDENTIFICATOR INTERFACE_KEYWORD '{' INTERFACE_FIELDS '}' { print("Interface definition"); }
   ;
@@ -83,8 +83,8 @@ INTERFACE_FIELD:
   ;
 
 INTERFACE_METHOD_ARGS:
-  TESTVAL
-  | INTERFACE_METHOD_ARGS ',' TESTVAL
+  TYPEVAL
+  | INTERFACE_METHOD_ARGS ',' TYPEVAL
   |
   ;
 
@@ -94,12 +94,12 @@ STRUCT_FIELDS:
   ;
 
 STRUCT_FIELD: 
-  MULTIPLE_IDENT TESTVAL 
+  MULTIPLE_IDENT TYPEVAL 
   |
   ;
 
 FUNCTION : FUNC_KEYWORD IDENTIFICATOR '(' FUNC_PARAMS ')' FUNC_RESULT  '{' FUNCTION_STATEMENTS '}' { print("Function declaration"); }
-  | FUNC_KEYWORD '(' TESTVAL TESTVAL ')' IDENTIFICATOR '(' FUNC_PARAMS ')' FUNC_RESULT  '{' FUNCTION_STATEMENTS '}' { print("Method declaration"); }//QUESTION ?!?!??!?!??!
+  | FUNC_KEYWORD '(' TYPEVAL TYPEVAL ')' IDENTIFICATOR '(' FUNC_PARAMS ')' FUNC_RESULT  '{' FUNCTION_STATEMENTS '}' { print("Method declaration"); }//QUESTION ?!?!??!?!??!
   ;
 
 ANON_FUNCTION:
@@ -113,8 +113,8 @@ FUNCTION_STATEMENTS:
   ;
 
 FUNC_PARAMETER_GROUP :  
-  MULTIPLE_IDENT TESTVAL { print("Group of parameters"); }
-  | IDENTIFICATOR DOT_DOT_DOT TESTVAL { print("Dot dot dot parameter"); }
+  MULTIPLE_IDENT TYPEVAL { print("Group of parameters"); }
+  | IDENTIFICATOR DOT_DOT_DOT TYPEVAL { print("Dot dot dot parameter"); }
   ;
 
 FUNC_PARAMS: FUNC_PARAMETER_GROUPS
@@ -125,21 +125,21 @@ FUNC_PARAMETER_GROUPS : FUNC_PARAMETER_GROUP
   ;
 
 FUNC_RESULT : 
-  TESTVAL                 { print("Single unnamed function result"); }
+  TYPEVAL                 { print("Single unnamed function result"); }
   | '(' FUNC_RESULT_NAMED ')'       { print("Multiple named function result"); }
   | '(' FUNC_RESULT_UNNAMED ')'     { print("Multiple unnamed function result"); }
   |
   ;
 
 FUNC_RESULT_UNNAMED : 
-  TESTVAL          { print("Type in unnamed function result"); }
-  | FUNC_RESULT_UNNAMED ',' TESTVAL    { print("Type in unnamed function result"); }
+  TYPEVAL          { print("Type in unnamed function result"); }
+  | FUNC_RESULT_UNNAMED ',' TYPEVAL    { print("Type in unnamed function result"); }
   |
   ;
 
 FUNC_RESULT_NAMED :
-  TESTVAL TESTVAL        { print("Type in named function result"); }//QUESTION
-  | FUNC_RESULT_NAMED ',' TESTVAL TESTVAL  { print("Type in named function result"); }//QUESTION
+  TYPEVAL TYPEVAL        { print("Type in named function result"); }//QUESTION
+  | FUNC_RESULT_NAMED ',' TYPEVAL TYPEVAL  { print("Type in named function result"); }//QUESTION
   ;
 
 STATEMENTS : STATEMENT 
@@ -203,11 +203,11 @@ FOR_AFTER :
   ;
 
 DECLARATION: 
-  VAR_KEYWORD VARIABLE_DECLARATION 
-  | VAR_KEYWORD VARIABLE_DECLARATION_ASSIGNMENT  { print("Declaration (with assignment) of variable"); }
-  | VAR_KEYWORD '('  MULTIPLE_VARIABLE_DECLARATION  ')' { print("Multiple declaration"); }
-  | CONST_KEYWORD VARIABLE_DECLARATION_ASSIGNMENT { print("Declaration (with assignment) of constant "); }
-  | SHORT_DEFINING { print("Short defining"); }  
+  VAR_KEYWORD VARIABLE_DECLARATION                      { print("Simple variable declaration");                 }
+  | VAR_KEYWORD VARIABLE_DECLARATION_ASSIGNMENT         { print("Declaration (with assignment) of variable");   }
+  | VAR_KEYWORD '('  MULTIPLE_VARIABLE_DECLARATION  ')' { print("Multiple declaration");                        }
+  | CONST_KEYWORD VARIABLE_DECLARATION_ASSIGNMENT       { print("Declaration (with assignment) of constant ");  }
+  | SHORT_DEFINING                                      { print("Short defining");                              }         
   ;
 
 
@@ -260,10 +260,9 @@ RELATION : EQ_RELATION
 
 RVALUE : 
   VALUE
-  //| '(' RVALUE ')' + 2 reduce/reduce
   | VALUE '+' RVALUE
   | VALUE '-' RVALUE
-  | VALUE '*' RVALUE //Создает 2 конфликта сдвиг/свертка с   | FULL_IDENTIFICATOR и   | FULL_IDENTIFICATOR ARRAY_INDEXATION 
+  | VALUE '*' RVALUE 
   | VALUE '/' RVALUE 
   | VALUE '%' RVALUE
   | VALUE '|' RVALUE
@@ -271,11 +270,11 @@ RVALUE :
   | VALUE '&' RVALUE
   | VALUE SHIFT_LEFT RVALUE
   | VALUE SHIFT_RIGHT RVALUE
-  | TYPE '{' INITIALIZER '}'                            { print("Initializer");}  
-  | IDENTIFICATOR '{' INITIALIZER '}'                   { print("Initializer");} 
-  | TYPE '{' FUNCTION_CALL_ARGUMENTS '}'                { print("Initializer");} 
-  | IDENTIFICATOR '{' FUNCTION_CALL_ARGUMENTS '}'       { print("Initializer");} 
-  | ANON_FUNCTION   { print("Anonimous function");} 
+  | TYPE '{' INITIALIZER '}'                            
+  | IDENTIFICATOR '{' INITIALIZER '}'                   
+  | TYPE '{' FUNCTION_CALL_ARGUMENTS '}'                
+  | IDENTIFICATOR '{' FUNCTION_CALL_ARGUMENTS '}'      
+  | ANON_FUNCTION   
   ;
 
 VALUE:
@@ -337,15 +336,12 @@ MULTIPLE_VARIABLE_DECLARATION:
   | '\n'
   ; 
 
-
- 
 VARIABLE_DECLARATION:
-  MULTIPLE_IDENT TESTVAL  {print("Declaration of variable");}  
+  MULTIPLE_IDENT TYPEVAL   
   ;
 
 VARIABLE_DECLARATION_ASSIGNMENT: 
-  MULTIPLE_IDENT TESTVAL '='  MULTIPLE_RVALUE
- // | MULTIPLE_IDENT '='  MULTIPLE_RVALUE
+  MULTIPLE_IDENT TYPEVAL '='  MULTIPLE_RVALUE
   ;
 
 MULTIPLE_RVALUE:
@@ -354,7 +350,7 @@ MULTIPLE_RVALUE:
   ;
 
 
-TESTVAL:
+TYPEVAL:
   TYPE
   | IDENTIFICATOR
   ;

@@ -8,7 +8,7 @@ func main() {
             fmt.Print(i * j, "\t")
         }
 		if (value < 0){
-			continue        // переходим к следующей итерации
+			continue        
 		}
 		
 		break
