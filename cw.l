@@ -48,9 +48,10 @@
 <C_COMMENT>.    { }
 
 [/][/].*    {  ;					}
+[`].*		{  ;					}
 
 
-
+map			{ return MAP_KEYWORD;}
 package 	{ return PACKAGE_KEYWORD; }
 import 		{ return IMPORT_KEYWORD;  }
 func		{ return FUNC_KEYWORD; 	}
