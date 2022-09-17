@@ -5,6 +5,7 @@
 #include "cw.tab.h"
 
 	unsigned line_number;
+	int ins_token;
     extern int yylex();
 	extern void yyerror(char * msg);
 	FILE *inputStream;
@@ -23,6 +24,7 @@
 	int main(int argc, char* argv[])
 	{
 		line_number = 1;
+		ins_token = 0;
 
 		inputStream = fopen(argv[1], "r");
 		
@@ -40,111 +42,104 @@
 
 
 %x C_COMMENT
-%x C_SEP
 %%
 "/*"            { BEGIN(C_COMMENT); }
 <C_COMMENT>"*/" { BEGIN(INITIAL); }
 <C_COMMENT>\n   { line_number++; }
 <C_COMMENT>.    { }
 
-<C_SEP>\n		{ BEGIN(INITIAL); return ';'; }
-<C_SEP>.		{ BEGIN(INITIAL); }
 
-'\n'		{  }
+
+
 
 [/][/].*    {  ;					}
 
-break		{ BEGIN(C_SEP); return BREAK_KEYWORD;  	}
-case 		{ return CASE_KEYWORD;		}
-chan		{ return CHAN_KEYWORD;		}
-const 		{ return CONST_KEYWORD; 	}
-continue	{ BEGIN(C_SEP); return CONTINUE_KEYWORD;  }
-default 	{ return DEFAULT_KEYWORD; 	}
-defer 		{ return DEFER_KEYWORD; 	}
-else		{ return ELSE_KEYWORD;		}	
-fallthrough	{ BEGIN(C_SEP); return FALL_KEYWORD;		}
-for			{ return FOR_KEYWORD;  		}
-func		{ return FUNC_KEYWORD; 		}
-go			{ return GO_KEYWORD; 		}
-goto		{ return GOTO_KEYWORD;		}
-if			{ return IF_KEYWORD;		}
-import 		{ return IMPORT_KEYWORD;  	}
-interface 	{ return INTERFACE_KEYWORD; }
-map			{ return MAP_KEYWORD;		}
-package 	{ return PACKAGE_KEYWORD; 	}
-range		{ return RANGE_KEYWORD;  	}
-return		{ BEGIN(C_SEP); return RETURN_KEYWORD; 	}
-select		{ return SELECT_KEYWORD;	}
-struct 		{ return STRUCT_KEYWORD; 	}	
-switch 		{ return SWITCH_KEYWORD; 	}
-type		{ return TYPE_KEYWORD; 		}	
-var 		{ return VAR_KEYWORD;  		}
+break		{ ins_token = 1; return BREAK_KEYWORD;  	}
+case 		{ ins_token = 0; return CASE_KEYWORD;		}
+chan		{ ins_token = 0; return CHAN_KEYWORD;		}
+const 		{ ins_token = 0; return CONST_KEYWORD; 	}
+continue	{ ins_token = 1; return CONTINUE_KEYWORD;  }
+default 	{ ins_token = 0; return DEFAULT_KEYWORD; 	}
+defer 		{ ins_token = 0; return DEFER_KEYWORD; 	}
+else		{ ins_token = 0; return ELSE_KEYWORD;		}	
+fallthrough	{ ins_token = 1; return FALL_KEYWORD;		}
+for			{ ins_token = 0; return FOR_KEYWORD;  		}
+func		{ ins_token = 0; return FUNC_KEYWORD; 		}
+go			{ ins_token = 0; return GO_KEYWORD; 		}
+goto		{ ins_token = 0;  return GOTO_KEYWORD;		}
+if			{ ins_token = 0; return IF_KEYWORD;			}
+import 		{ ins_token = 0; return IMPORT_KEYWORD;  	}
+interface 	{ ins_token = 0; return INTERFACE_KEYWORD; 	}
+map			{ ins_token = 0; return MAP_KEYWORD;		}
+package 	{ ins_token = 0; return PACKAGE_KEYWORD; 	}
+range		{ ins_token = 0;  return RANGE_KEYWORD;  	}
+return		{ ins_token = 1; return RETURN_KEYWORD; 	}
+select		{ ins_token = 0; return SELECT_KEYWORD;		}
+struct 		{ ins_token = 0; return STRUCT_KEYWORD; 	}	
+switch 		{ ins_token = 0; return SWITCH_KEYWORD; 	}
+type		{ ins_token = 0; return TYPE_KEYWORD; 		}	
+var 		{ ins_token = 0; return VAR_KEYWORD;  		}
 
-nil			{ return NIL_KEYWORD; 		}
-
-
-[-]?[0-9]+ 			{ BEGIN(C_SEP); return int_lit;	   		}
-[-]?0(xX)[0-9]+ 	{ BEGIN(C_SEP); return int_lit;	   		}
-[-]?0(bB)[0-9]+ 	{ BEGIN(C_SEP); return int_lit;	   		}
-
-[-]?[0-9]+[\.][0-9]+ 		{ BEGIN(C_SEP); return float_lit;	}
-[-]?0(xX)[0-9]+[\.][0-9]+ 	{ BEGIN(C_SEP); return float_lit;	}
-[-]?0(bB)[0-9]+[\.][0-9]+ 	{ BEGIN(C_SEP); return float_lit;	}
-
-true|false 					{ return bool_lit;   	}
-[-]?[0-9]+[[\+][0-9]+[i]]? 	{ BEGIN(C_SEP); return imaginary_lit; }
-\"(\\.|[^"\\])*\"	{ BEGIN(C_SEP); return string_lit; }
-\`(\\.|[^"\\])*\`	{ BEGIN(C_SEP); return string_lit; }
+nil			{ ins_token = 0; return NIL_KEYWORD; 		}
 
 
-:=			{ return COLON_EQ; 	}
+[-]?[0-9]+ 			{   ins_token = 1; return int_lit;	   		}
+[-]?0(xX)[0-9]+ 	{   ins_token = 1; return int_lit;	   		}
+[-]?0(bB)[0-9]+ 	{   ins_token = 1; return int_lit;	   		}
+
+[-]?[0-9]+[\.][0-9]+ 		{   ins_token = 1; return float_lit;	}
+[-]?0(xX)[0-9]+[\.][0-9]+ 	{   ins_token = 1; return float_lit;	}
+[-]?0(bB)[0-9]+[\.][0-9]+ 	{   ins_token = 1; return float_lit;	}
+
+true|false 					{ ins_token = 1; return bool_lit;   	}
+[-]?[0-9]+[[\+][0-9]+[i]]? 	{  ins_token = 1;  return imaginary_lit; }
+\"(\\.|[^"\\])*\"	{   ins_token = 1; return string_lit; }
+\`(\\.|[^"\\])*\`	{   ins_token = 1; return string_lit; }
 
 
+:=			{ ins_token = 0; return COLON_EQ; 	}
 
 
 
-bool		{ return BOOL_TYPE; 		}
-string 		{ return STRING_TYPE; 		}
-int8		{ return INT_TYPE; }
-int16		{ return INT_TYPE; }
-int32 		{ return INT_TYPE; }
-int64		{ return INT_TYPE; }
-uint8		{ return INT_TYPE; }
-uint16 		{ return INT_TYPE; }
-uint32		{ return INT_TYPE; }
-uint64		{ return INT_TYPE; }
-byte		{ return INT_TYPE; }
-rune		{ return INT_TYPE; }
-int			{ return INT_TYPE; }
-uint		{ return INT_TYPE; }
-float32		{ return FLOAT_TYPE; }
-float64		{ return FLOAT_TYPE; }
-complex64	{ return COMPLEX_TYPE; }
-complex128	{ return COMPLEX_TYPE; }
 
-[A-Za-z_]+[A-Za-z_0-9]* { BEGIN(C_SEP); return identifier;		}
 
-[+\-*\/%&\|\^=\~!]		{ return yytext[0]; }
+bool		{ ins_token = 0; return BOOL_TYPE; 		}
+string 		{ ins_token = 0; return STRING_TYPE; 		}
+int8|int16|int32|int64|uint8|uint16|uint32|uint64|byte|rune|int|uint		{ ins_token = 0;  return INT_TYPE; }
+float32|float64																{ ins_token = 0;  return FLOAT_TYPE; }
+complex64|complex128														{ ins_token = 0;  return COMPLEX_TYPE; }
 
->>|<<	{ return SHIFT;		}
+[A-Za-z_]+[A-Za-z_0-9]* {   ins_token = 1;  return identifier;		}
+[ \t\f\v] 				{ ; 					}
+\n						{ 
+	int flag = ins_token;
+	ins_token = 0;
+	line_number++; 
+	//printf("Lex: newline(token=%d)\n", ins_token);
+	if (flag == 1) return ';'; 
+	}
+;						{ ins_token = 0;  return ';'; }
+[+\-*\/%&\|\^=\~!]		{ ins_token = 0;  return yytext[0]; }
 
-&&		{return LOGICAL_AND; }
-"||"		{ return LOGICAL_OR;	}
-"<-"			{ return LEFT_ARROW; 	}
-"++"			{ BEGIN(C_SEP); return INCREMENT;		}
-"--"			{ BEGIN(C_SEP); return DECREMENT; 	}
+>>|<<			{ ins_token = 0;  return SHIFT;		}
 
-"=="			{ return EQ_RELATION;	}
-"<="			{ return LESS_EQ_RELATION;}
-">="			{ return GREATER_EQ_RELATION;}
-"<"			{ return LESS_RELATION; }
-">" 			{ return GREATER_RELATION; }
-"..."			{ return DOT_DOT_DOT;	}
+&&				{ ins_token = 0;  return LOGICAL_AND; }
+"||"			{ ins_token = 0;  return LOGICAL_OR;	}
+"<-"			{ ins_token = 0;  return LEFT_ARROW; 	}
+"++"			{ ins_token = 1; return INCREMENT;		}
+"--"			{ ins_token = 1; return DECREMENT; 	}
 
-[(\.,\{\:\[] { return yytext[0]; }
-\)				 { BEGIN(C_SEP); return yytext[0];}
-\]				 { BEGIN(C_SEP); return yytext[0];}
-\}				 { BEGIN(C_SEP); return yytext[0];}
+"=="			{ ins_token = 0;  return EQ_RELATION;	}
+"<="			{ ins_token = 0;  return LESS_EQ_RELATION;}
+">="			{ ins_token = 0;  return GREATER_EQ_RELATION;}
+"<"				{ ins_token = 0;  return LESS_RELATION; }
+">" 			{ ins_token = 0;  return GREATER_RELATION; }
+"..."			{ ins_token = 0;  return DOT_DOT_DOT;	}
+
+[\(\.,\{\:\[] 			{   ins_token = 0;  return yytext[0]; 	}
+\)				 		{   ins_token = 1; return yytext[0];	}
+\]				 		{   ins_token = 1; return yytext[0];	}
+\}				 		{   ins_token = 1; return yytext[0];	}
 
 
 %%

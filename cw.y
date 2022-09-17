@@ -17,6 +17,12 @@ extern void print(char *msg);
 
 %token INT_TYPE FLOAT_TYPE COMPLEX_TYPE BOOL_TYPE STRING_TYPE
 
+%nonassoc PREC_1
+%nonassoc PREC_2
+%nonassoc PREC_3
+%nonassoc PREC_4
+%nonassoc PREC_5
+
 %token int_lit float_lit  bool_lit imaginary_lit string_lit
 %token COLON_EQ DOT_DOT_DOT LEFT_ARROW SHIFT NIL_KEYWORD
 %left LOGICAL_OR
@@ -28,6 +34,8 @@ extern void print(char *msg);
 %left '*' '/' '|'
 %left '^' '&'
 %left SHIFT
+
+
 
 %%
 
@@ -44,10 +52,21 @@ RepeatingTopLevelDecl: TopLevelDecl ';' | RepeatingTopLevelDecl TopLevelDecl ';'
 PackageClause  : PACKAGE_KEYWORD PackageName { print("Package Clause"); };
 PackageName    : identifier ;
 
-ImportDecl       : IMPORT_KEYWORD ImportSpec | IMPORT_KEYWORD  '(' ')' | IMPORT_KEYWORD  '(' RepeatingImportSpec ')' ;
-RepeatingImportSpec: ImportSpec ';' | RepeatingImportSpec ImportSpec ';' ;
-ImportSpec       :  '.'  ImportPath |  PackageName ImportPath  ;
-ImportPath       : string_lit ;
+ImportDecl       : 
+  IMPORT_KEYWORD ImportSpec { print("Import declaration"); } 
+  | IMPORT_KEYWORD  '(' ')'  { print("Import declaration"); }
+  | IMPORT_KEYWORD  '(' RepeatingImportSpec ')'  { print("Import declaration"); } 
+  ;
+RepeatingImportSpec: 
+  ImportSpec ';' 
+  | RepeatingImportSpec ImportSpec ';' 
+  ;
+ImportSpec       :  
+  '.'  ImportPath             {print("ImportSpec");}
+  |  PackageName ImportPath   {print("ImportSpec");}
+  | ImportPath                {print("ImportSpec");}
+  ;
+ImportPath       : string_lit { print("Import path"); };
 
 
 Declaration : 
@@ -58,24 +77,24 @@ Declaration :
 
 TopLevelDecl: 
   Declaration 
-  | FunctionDecl 
+  | FunctionDecl        { print("Function declaration"); }
   | MethodDecl 
   ;
 
 ConstDecl:
-  CONST_KEYWORD  ConstSpec 
-  | CONST_KEYWORD '('  RepeatingConstSpec  ')'  
-  | CONST_KEYWORD '('  ')'  
+  CONST_KEYWORD  ConstSpec                { print("Const declaration"); }
+  | CONST_KEYWORD '('  RepeatingConstSpec  ')'  { print("Const declaration (in brackets)");}
+  | CONST_KEYWORD '('  ')'                { print("Empty const declaration");}
   ;
 
 RepeatingConstSpec:
-  ConstSpec ';'
-  | RepeatingConstSpec ConstSpec ';'
+  ConstSpec ';'                           { print("ConstSpec"); }
+  | RepeatingConstSpec ConstSpec ';'      { print("ConstSpec"); }
   ;
 
 
 ConstSpec:
- IdentifierList 
+ IdentifierList   
  | IdentifierList OptConstSpecFields
  ;
 
@@ -133,7 +152,7 @@ VarSpec:
   | IdentifierList  Type  '=' ExpressionList 
   ;
 
-ShortVarDecl: IdentifierList COLON_EQ ExpressionList ;
+ShortVarDecl: IdentifierList COLON_EQ ExpressionList  { print("ShortVarDecl"); };
 
 FunctionDecl:
   FUNC_KEYWORD FunctionName Signature 
@@ -142,7 +161,7 @@ FunctionDecl:
   | FUNC_KEYWORD FunctionName TypeParameters Signature  FunctionBody 
   ;
 FunctionName: identifier ;
-FunctionBody:Block ;
+FunctionBody: Block ;
 
 MethodDecl: 
   FUNC_KEYWORD Receiver MethodName Signature 
@@ -157,13 +176,13 @@ Signature:
   | Parameters  Result 
   ;
 Result : 
-  Parameters 
-  | Type 
+  Parameters                            { print("Parameters as a result"); }
+  | Type                                { print("Type as a result"); }
   ;
 Parameters:
-   '('  ')' 
-   | '(' ParameterList ')' 
-   | '(' ParameterList ','   ')' 
+   '('  ')'                             { print("Empty function parameters"); }
+   | '(' ParameterList ')'              { print("Parameters list"); }
+   | '(' ParameterList ','   ')'        { print("Parameters list ,"); }
    ;
 ParameterList:
   ParameterDecl
@@ -404,10 +423,14 @@ StatementList:
   ;
 RepeatingStatementList :
   Statement ';'
-  | RepeatingStatementList ';'
+  | RepeatingStatementList Statement ';'
   ;
 
-Operand  : Literal | OperandName | OperandName  TypeArgs  | '(' Expression  ')' ;
+Operand  : Literal 
+  | OperandName 
+  | OperandName  TypeArgs  
+  | '(' Expression  ')'         { print("Operand ( expression) "); }
+  ;
 Literal  : BasicLit | CompositeLit | FunctionLit ;
 BasicLit : int_lit | float_lit | bool_lit | imaginary_lit |  string_lit  | NIL_KEYWORD;
 OperandName : identifier  | QualifiedIdent   ;
@@ -434,7 +457,7 @@ PrimaryExpr :
 	PrimaryExpr Index |
 	PrimaryExpr Slice |
 	PrimaryExpr TypeAssertion |
-	PrimaryExpr Arguments 
+	PrimaryExpr Arguments     { print("PrimaryExpression Arguments"); }
   ;
 
 Selector : '.' identifier ;
@@ -450,8 +473,8 @@ Slice : '['  ':'  ']' |
 TypeAssertion : '.' '(' Type ')' ;
 
 Arguments  : 
-  '(' ')'
-  | '('   ExpressionList  ArgumentsAppendix ')'
+  '(' ')'             
+  | '('   ExpressionList  ArgumentsAppendix ')'             
   | '('   Type   ArgumentsAppendix ')'
   | '('   Type  ',' ExpressionList   ArgumentsAppendix ')'
   ;
@@ -471,8 +494,14 @@ ReceiverType : Type ;
 Expression : UnaryExpr | Expression binary_op Expression ;
 UnaryExpr  : PrimaryExpr | unary_op UnaryExpr ;
 
-binary_op  : LOGICAL_AND | LOGICAL_OR | rel_op |  mul_op ;
-rel_op     : EQ_RELATION GREATER_RELATION LESS_RELATION GREATER_EQ_RELATION LESS_EQ_RELATION NOT_EQ_RELATION
+binary_op  : 
+  LOGICAL_OR        %prec PREC_1
+  | LOGICAL_AND     %prec PREC_2
+  | rel_op          %prec PREC_3   
+  | add_op          %prec PREC_4  
+  | mul_op          %prec PREC_5  
+  ;
+rel_op     : EQ_RELATION | GREATER_RELATION | LESS_RELATION | GREATER_EQ_RELATION | LESS_EQ_RELATION | NOT_EQ_RELATION ;
 mul_op     :  '/' | '%' | SHIFT | '&';
 add_op     : '+' | '-' | '!' | '^' ;
 unary_op   : '+' | '-' | '!' | '^' | '*' | '&' | LEFT_ARROW;
