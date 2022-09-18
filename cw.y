@@ -17,18 +17,23 @@ char letter;
 %token  IDENTIFICATOR COLON_EQ DOT_DOT_DOT NIL_KEYWORD DEFER_KEYWORD SHIFT_LEFT SHIFT_RIGHT OPER_ASSIGNMENT MAP_KEYWORD
 %token STRING INTEGER FLOAT TRUE_FALSE COMPLEX
 %token TYPE_KEYWORD STRUCT_KEYWORD INTERFACE_KEYWORD
-%token CONST_KEYWORD PACKAGE_KEYWORD IMPORT_KEYWORD VAR_KEYWORD  FUNC_KEYWORD RETURN_KEYWORD FALL_KEYWORD
-%token IF_KEYWORD ELSE_KEYWORD SWITCH_KEYWORD CASE_KEYWORD DEFAULT_KEYWORD CHAN_KEYWORD LEFT_ARROW
+%token CONST_KEYWORD PACKAGE_KEYWORD IMPORT_KEYWORD VAR_KEYWORD  FUNC_KEYWORD RETURN_KEYWORD 
+%token IF_KEYWORD ELSE_KEYWORD SWITCH_KEYWORD CASE_KEYWORD DEFAULT_KEYWORD CHAN_KEYWORD LEFT_ARROW SELECT_KEYWORD
 %token EQ_RELATION GREATER_RELATION LESS_RELATION EQ_GREATER_RELATION EQ_LESS_RELATION NOT_EQ_RELATION
-%token FOR_KEYWORD BREAK_KEYWORD CONTINUE_KEYWORD RANGE_KEYWORD GO_KEYWORD
+%token FOR_KEYWORD BREAK_KEYWORD CONTINUE_KEYWORD RANGE_KEYWORD GO_KEYWORD GOTO_KEYWORD  FALL_KEYWORD
 %token INT_TYPE FLOAT_TYPE  COMPLEX_TYPE  BOOL_TYPE STRING_TYPE
 
-
+%left LEFT_ARROW
 %left LOWER_THAN_RELATION
 %left OR_OPERATION
 %left AND_OPERATION
 %left NOT_OPERATION
-%left EQ_RELATION GREATER_RELATION LESS_RELATION EQ_GREATER_RELATION EQ_LESS_RELATION NOT_EQ_RELATION
+%left EQ_RELATION 
+%left GREATER_RELATION 
+%left LESS_RELATION 
+%left EQ_GREATER_RELATION 
+%left EQ_LESS_RELATION 
+%left NOT_EQ_RELATION
 %left '-' '+' '%'
 %left '*' '/' '|'
 %left '^' '&'
@@ -75,7 +80,6 @@ GLOBALS :
   ;
 
 GLOBAL:
-
   FUNCTION ';'
   | IMPORT ';'
   | TYPEDECL ';'
@@ -96,9 +100,8 @@ MULTIPLE_TYPESPEC:
 
 
 TYPESPEC:
-  IDENTIFICATOR TYPEVAL           { print("Extra type definition"); } 
-  | IDENTIFICATOR '=' TYPEVAL     { print("Alyas definition"); } 
-
+  IDENTIFICATOR TYPE          { print("Extra type definition"); } 
+  | IDENTIFICATOR '=' TYPE     { print("Alyas definition"); } 
   ;
 
 
@@ -122,26 +125,29 @@ INTERFACE_METHOD_ARGS:
   ;
 
 STRUCT_FIELDS:
-  STRUCT_FIELD ';'
-  | STRUCT_FIELDS  STRUCT_FIELD ';'  
+  STRUCT_FIELD ';'                         { print("Struct field");}
+  | STRUCT_FIELDS  STRUCT_FIELD ';'       { print("Struct field");}
   ;
 
 STRUCT_FIELD: 
-  MULTIPLE_IDENT TYPEVAL            //{ print("Multiple ident type"); }
+  MULTIPLE_IDENT TYPE            //{ print("Multiple ident type"); }
   | STRUCT_EMBEDDED_FIELD    
-  | MULTIPLE_IDENT TYPEVAL STRING
+  | MULTIPLE_IDENT TYPE STRING
   | STRUCT_EMBEDDED_FIELD  STRING
   ;
 
 STRUCT_EMBEDDED_FIELD:
   TypeName  
-  | TypeName  TypeArgs 
+  //| TypeName  TypeArgs              //REDUCE/REDUCE
   | '*'  TypeName  
-  | '*'  TypeName  TypeArgs 
+  //| '*'  TypeName  TypeArgs 
 
   ;
 
-TypeName  : IDENTIFICATOR | QUALIFIED_IDENT ;  // SHIFT/REDUCE
+TypeName  : 
+  FULL_IDENTIFICATOR 
+  //| QUALIFIED_IDENT    // SHIFT/REDUCE
+  ; 
 TypeArgs  : 
   '[' MULTIPLE_TYPE  ']' 
   | '[' MULTIPLE_TYPE ',' ']' 
@@ -214,23 +220,51 @@ STATEMENTS : STATEMENT ';'
   | STATEMENTS  STATEMENT ';' 
   ;
 
-STATEMENT : DECLARATION  
+STATEMENT : 
+  DECLARATION  
   | IF_ELSE_STATEMENT 
-  | FUNCTION_CALL 
+  | LABELED_STMT
   | SWITCH 
-  | ASSIGNMENT
-  | UNARY_OPERATION 
+  //| SELECT
+  | SIMPLE_STATEMENT
   | FOR 
-  | BREAK_KEYWORD 
-  | CONTINUE_KEYWORD 
+  | FALL_KEYWORD
+  | GOTO_KEYWORD IDENTIFICATOR
+  | BLOCK
+  | BREAK
+  | CONTINUE
   | RETURN 
-  | DEFER_KEYWORD FUNCTION_CALL   { print("Defer function call");}
-  | GO_KEYWORD  FUNCTION_CALL     { print("Starting goroutine"); }
+  | DEFER_KEYWORD EXPRESSION  { print("Defer function call");}
+  | GO_KEYWORD  EXPRESSION     { print("Starting goroutine"); }
   ;
+
+LABELED_STMT: IDENTIFICATOR ':' STATEMENT ;
+
+SIMPLE_STATEMENT:
+  EXPRESSION
+  | SEND_STMT
+  | INC_DEC_STMT
+  | Assignment
+  | SHORT_DEFINING
+  ;
+
+INC_DEC_STMT: EXPRESSION INCREMENT | EXPRESSION DECREMENT ;
+SEND_STMT: EXPRESSION LEFT_ARROW EXPRESSION ;
+
 
 RETURN :
   RETURN_KEYWORD
-  | RETURN_KEYWORD MULTIPLE_RVALUE //REDUCE/REDUCE
+  | RETURN_KEYWORD ExpressionList
+  ;
+
+BREAK:
+  BREAK_KEYWORD
+  | BREAK_KEYWORD ExpressionList
+  ;
+
+CONTINUE:
+  CONTINUE_KEYWORD
+  | CONTINUE_KEYWORD ExpressionList
   ;
 
 UNARY_OPERATION : 
@@ -240,49 +274,69 @@ UNARY_OPERATION :
   | DECREMENT IDENTIFICATOR 
   ;
 
-ASSIGNMENT : 
-  MULTIPLE_IDENT '=' MULTIPLE_RVALUE   { print("Assignment of variable.");  }
-  | FULL_IDENTIFICATOR ARRAY_INDEXATION  '=' RVALUE { print("Assigment of array element. "); }
-  | '*' FULL_IDENTIFICATOR   '=' RVALUE { print("Assigment of pointer by address. "); } //
-  | FULL_IDENTIFICATOR OPER_ASSIGNMENT RVALUE  { print("Operation + assignment");}
-  ;
+SELECT : SELECT_KEYWORD '{' '}' | SELECT_KEYWORD '{' RepeatingCommClause '}' ;
+RepeatingCommClause: CommClause | RepeatingCommClause CommClause ;
+CommClause : CommCase ':' STATEMENT_LIST ;
+CommCase   : CASE_KEYWORD SEND_STMT| CASE_KEYWORD  RecvStmt| DEFAULT_KEYWORD ;
+RecvStmt   : ExpressionList '=' RecvExpr | SIMPLE_IDENT_LIST COLON_EQ RecvExpr ;
+RecvExpr   : EXPRESSION ;
+
+
 FOR :
-  FOR_KEYWORD FOR_INIT ';' FOR_CONDITION ';' FOR_AFTER BLOCK { print("For-loop"); }
+  FOR_KEYWORD FOR_CLAUSE BLOCK { print("For-loop"); }
   | FOR_KEYWORD  FOR_CONDITION BLOCK                         { print("Shortened for-loop"); }
-  | FOR_KEYWORD MULTIPLE_IDENT COLON_EQ RANGE_KEYWORD FULL_IDENTIFICATOR BLOCK { print("For in range loop"); }
-
+  | FOR_KEYWORD FOR_RANGE BLOCK { print("For in range loop"); }
   ;
 
-FOR_INIT : SHORT_DEFINING       { print("Short defining in For-loop init "); }
-  | ASSIGNMENT                  { print("Assigment in For-loop init "); }
-  |                             { print("Emptyness in For-loop init "); }
+FOR_CLAUSE:
+  ';' ';'
+  | ';'  ';' SIMPLE_STATEMENT
+  | ';' EXPRESSION ';' 
+  | ';' EXPRESSION ';' SIMPLE_STATEMENT
+  | SIMPLE_STATEMENT ';'  ';' 
+  | SIMPLE_STATEMENT ';'  ';' SIMPLE_STATEMENT
+  | SIMPLE_STATEMENT ';' EXPRESSION ';' 
+  | SIMPLE_STATEMENT ';' EXPRESSION ';' SIMPLE_STATEMENT
+
+FOR_CONDITION: EXPRESSION ;
+FOR_RANGE:
+  Assignment | //to prevent Reduce/reduce
+  SIMPLE_IDENT_LIST COLON_EQ  RANGE_KEYWORD EXPRESSION
   ;
 
-FOR_CONDITION :
-  LOGICAL_EXPRESSION    { print("Logical expression in For-loop condition "); }
-  |                        { print("Empty logical expression in For-loop condition "); }
-  ;
-
-FOR_AFTER :
-  ASSIGNMENT          { print("Assignment in For-loop after-block "); }
-  | FUNCTION_CALL     { print("Function call in For-loop after-block "); }
-  | UNARY_OPERATION   { print("Unary operation in For-loop after-block "); }
-  |                   { print("Emptyness in For-loop after-block "); }
-  ;
 
 DECLARATION: 
   VAR_KEYWORD VARIABLE_DECLARATION                      { print("Simple variable declaration");                 }
   | VAR_KEYWORD VARIABLE_DECLARATION_ASSIGNMENT         { print("Declaration (with assignment) of variable");   }
   | VAR_KEYWORD '('  MULTIPLE_VARIABLE_DECLARATION  ')' { print("Multiple declaration");                        }
   | CONST_KEYWORD VARIABLE_DECLARATION_ASSIGNMENT       { print("Declaration (with assignment) of constant ");  }
-  | SHORT_DEFINING                                      { print("Short defining");                              }         
+  //| SHORT_DEFINING                                      { print("Short defining");                              }
+  | VAR_KEYWORD SIMPLE_IDENT_LIST '=' EXPRESSION         
   ;
 
 
 SWITCH :
-  SWITCH_KEYWORD '(' RVALUE ')' '{' SWITCH_CASES '}'
-  | SWITCH_KEYWORD '(' RVALUE ')' '{' SWITCH_CASES DEFAULT_KEYWORD ':' STATEMENT_LIST '}' { print("Default case in switch"); }
+  EXPRESSION_SWITCH
+
   ;
+
+EXPRESSION_SWITCH:
+  SWITCH_KEYWORD  '{'  '}'
+  | SWITCH_KEYWORD OPT_EXPRESSION_SWITCH '{'  '}'
+  | SWITCH_KEYWORD  '{' MULTIPLE_ExprCaseClause '}'
+  | SWITCH_KEYWORD OPT_EXPRESSION_SWITCH '{' MULTIPLE_ExprCaseClause '}'
+  ;
+
+OPT_EXPRESSION_SWITCH:
+  EXPRESSION
+  | SIMPLE_STATEMENT ';' 
+  | SIMPLE_STATEMENT ';' EXPRESSION
+  ;
+
+
+MULTIPLE_ExprCaseClause : ExprCaseClause | MULTIPLE_ExprCaseClause ExprCaseClause ;
+ExprCaseClause : ExprSwitchCase ':' STATEMENT_LIST ;
+ExprSwitchCase : CASE_KEYWORD ExpressionList | DEFAULT_KEYWORD ;
 
 
 SWITCH_VALUES: 
@@ -307,10 +361,8 @@ IF_ELSE_IF:
 
 
 CONDITION : 
-  IF_KEYWORD LOGICAL_EXPRESSION BLOCK 
-  | IF_KEYWORD SHORT_DEFINING ';' LOGICAL_EXPRESSION BLOCK
-  | IF_KEYWORD ASSIGNMENT ';' LOGICAL_EXPRESSION BLOCK
-
+  IF_KEYWORD EXPRESSION BLOCK 
+  | IF_KEYWORD SIMPLE_STATEMENT ';' EXPRESSION BLOCK
   ;
 
 LOGICAL_EXPRESSION :
@@ -356,19 +408,129 @@ VALUE:
   | FUNCTION_CALL
   | FULL_IDENTIFICATOR
   | FULL_IDENTIFICATOR ARRAY_INDEXATION
-//  | '&' FULL_IDENTIFICATOR            { print("Getting address of identificator");}
   | '*' FULL_IDENTIFICATOR            { print("*FULL");}
   ;
 
+Assignment : 
+  EXPRESSION assign_op ExpressionList 
+  | EXPRESSION assign_op RANGE_KEYWORD EXPRESSION 
+  ;
+
+assign_op : 
+   '='
+  | mul_op '='
+  | add_op  '='
+  ;
+
+
 OPERAND:
   LITERAL
- // | '(' EXPRESSION ')'
-  | IDENTIFICATOR
-  | QUALIFIED_IDENT
+  | '(' EXPRESSION ')'
+  | LITERAL_TYPE
+  //| QUALIFIED_IDENT
   ;
 
 BASIC_LITERAL: INTEGER | STRING | FLOAT | TRUE_FALSE  | COMPLEX | NIL_KEYWORD ;
-LITERAL: BASIC_LITERAL | ANON_FUNCTION ; // | COMPOSITE_LITERAL;
+LITERAL: BASIC_LITERAL | ANON_FUNCTION  | COMPOSITE_LITERAL;
+
+
+COMPOSITE_LITERAL : LITERAL_TYPE LITERAL_VALUE ;
+
+LITERAL_TYPE:
+  STRUCT_TYPE
+  | ARRAY_TYPE 
+  | '[' DOT_DOT_DOT ']' TYPE
+  | SLICE_TYPE
+  | MAP_TYPE 
+  | TypeName                                          // +5 REDUCE/REDUCE
+  //| TypeName  TypeArgs  
+  ;
+LITERAL_VALUE : 
+  '{'  '}' 
+  | '{'  ElementList  '}' 
+  | '{'  ElementList  ',' '}' 
+  ;
+ElementList   : 
+  KeyedElement 
+  | ElementList ',' KeyedElement
+  ;
+KeyedElement  : 
+  Key ':' Element  |
+   Element 
+  ;
+Key           : EXPRESSION | LITERAL_VALUE;
+Element       : EXPRESSION | LITERAL_VALUE;
+
+
+PrimaryExpr :
+	OPERAND 
+  //|	Conversion 
+	| PrimaryExpr Selector 
+	| PrimaryExpr Index 
+	| PrimaryExpr Slice 
+	| PrimaryExpr TypeAssertion 
+	| PrimaryExpr Arguments     { print("PrimaryExpression Arguments"); }
+  ;
+
+Selector : '.' IDENTIFICATOR ;
+Index : '[' EXPRESSION ']' ;
+Slice : '['  ':'  ']' |
+        '['  ':'  EXPRESSION  ']' |
+        '['  EXPRESSION  ':'  ']' |
+        '['  EXPRESSION  ':'  EXPRESSION  ']' |
+        '['  ':' EXPRESSION ':' EXPRESSION ']' |
+        '['  EXPRESSION  ':' EXPRESSION ':' EXPRESSION ']' 
+      ;
+
+TypeAssertion : '.' '(' TYPE ')' ;
+
+ExpressionList:
+  EXPRESSION
+  | ExpressionList ',' EXPRESSION
+  ;
+
+Arguments  : 
+  '(' ')'             
+  | '('   ExpressionList  ')'             
+  //| '('   TYPE    ')'
+ // | '('   TYPE   ',' ExpressionList    ')'
+  | '('   ExpressionList  ArgumentsAppendix ')'             
+ //| '('   TYPE   ArgumentsAppendix ')'
+  //| '('   TYPE   ',' ExpressionList   ArgumentsAppendix ')'
+  ;
+
+ArgumentsAppendix:
+  DOT_DOT_DOT
+  | ','
+  | DOT_DOT_DOT ','
+  ;
+
+//MethodExpr: TYPE '.' IDENTIFICATOR ;
+
+
+EXPRESSION : 
+  UnaryExpr 
+  | EXPRESSION binary_op EXPRESSION 
+  ;
+UnaryExpr  : 
+  PrimaryExpr 
+  | unary_op UnaryExpr 
+  ;
+
+binary_op  : 
+  OR_OPERATION        
+  | AND_OPERATION    
+  | rel_op            
+  | add_op           
+  | mul_op          
+  ;
+rel_op     : EQ_RELATION | GREATER_RELATION | LESS_RELATION | EQ_GREATER_RELATION | EQ_LESS_RELATION | NOT_EQ_RELATION ;
+mul_op     :  '/' | '%' | SHIFT_LEFT | SHIFT_RIGHT | '&';
+add_op     : '+' | '-' | NOT_OPERATION | '^' ;
+unary_op   : '+' | '-' | NOT_OPERATION | '^' | '*' | '&' | LEFT_ARROW;
+
+//Conversion : Type '(' Expression  ')' | Type '(' Expression ',' ')' ;
+
 
 
 INITIALIZER:
@@ -405,8 +567,12 @@ FUNCTION_CALL_ARGUMENTS :
   ;
 
 SHORT_DEFINING:
-  MULTIPLE_IDENT COLON_EQ MULTIPLE_RVALUE
-  | VAR_KEYWORD MULTIPLE_IDENT '=' MULTIPLE_RVALUE
+  SIMPLE_IDENT_LIST COLON_EQ ExpressionList
+  ;
+
+SIMPLE_IDENT_LIST:
+  IDENTIFICATOR
+  | SIMPLE_IDENT_LIST ',' IDENTIFICATOR
   ;
 
 MULTIPLE_VARIABLE_DECLARATION:
@@ -417,16 +583,16 @@ MULTIPLE_VARIABLE_DECLARATION:
 MULTIPLE_VARIABLE_DECL_OPTION:
   VARIABLE_DECLARATION 
   | VARIABLE_DECLARATION_ASSIGNMENT
-  | IDENTIFICATOR '=' MULTIPLE_RVALUE
+  | SIMPLE_IDENT_LIST '=' ExpressionList
   ;
 
 
 VARIABLE_DECLARATION:
-  MULTIPLE_IDENT TYPEVAL   
+  SIMPLE_IDENT_LIST TYPE   
   ;
 
 VARIABLE_DECLARATION_ASSIGNMENT: 
-  MULTIPLE_IDENT TYPEVAL '='  MULTIPLE_RVALUE
+  SIMPLE_IDENT_LIST TYPE '='  ExpressionList
   ;
 
 MULTIPLE_RVALUE:
@@ -442,27 +608,49 @@ TYPEVAL:
 
 
 TYPE: 
+  TYPE_LIT
+  | TypeName
+  | '(' TYPE ')'
+  ;
+
+TYPE_LIT: 
   INT_TYPE
   | FLOAT_TYPE
   | COMPLEX_TYPE
   | BOOL_TYPE
   | STRING_TYPE
-  | MAP_KEYWORD '[' TYPE ']' TYPE
-  | FUNC_KEYWORD '(' FUNC_RESULT_UNNAMED ')' TYPE 
-  | '[' INTEGER ']' TYPE
-  | '[' DOT_DOT_DOT ']' TYPE
-  | '[' ']' TYPE
-  | '*' TYPE //Создает конфликт свептка/свертка с ???
-  | FULL_IDENTIFICATOR
-
-  | STRUCT_KEYWORD '{' '}'                        { print("Empty struct definition"); }
-  | STRUCT_KEYWORD '{' STRUCT_FIELD '}'           { print("Empty struct definition"); }  // ; may be ommited in complex lines
-  | STRUCT_KEYWORD '{' STRUCT_FIELDS '}'          { print("Struct definition"); }
-  | INTERFACE_KEYWORD '{'  '}'                    { print("Empty interface definition"); }
-  | INTERFACE_KEYWORD '{' INTERFACE_FIELDS '}'    { print("Interface definition"); }
-
+  | ARRAY_TYPE
+  | '[' DOT_DOT_DOT ']' TYPE  
+  | STRUCT_TYPE
+  | POINTER_TYPE
+  | FUNCTION_TYPE
+  | INTERFACE_TYPE
+  | SLICE_TYPE
+  | MAP_TYPE
+  //| CHANNEL_TYPE     // +8 Reduce/reduce
   ;
 
+INTERFACE_TYPE:
+  INTERFACE_KEYWORD '{'  '}'                    { print("Empty interface definition"); }
+  | INTERFACE_KEYWORD '{' INTERFACE_FIELDS '}'    { print("Interface definition"); }
+  ;
+SLICE_TYPE :  '[' ']' TYPE ';'
+CHANNEL_TYPE:
+  CHAN_KEYWORD  TYPE 
+  | CHAN_KEYWORD LEFT_ARROW  TYPE
+  | LEFT_ARROW CHAN_KEYWORD  TYPE 
+  ;
+
+POINTER_TYPE : '*' TYPE;
+FUNCTION_TYPE : FUNC_KEYWORD SIGNATURE ;
+STRUCT_TYPE:
+  STRUCT_KEYWORD '{' '}'                        { print("Empty struct definition"); }
+  | STRUCT_KEYWORD '{' STRUCT_FIELD '}'           { print("One field struct definition"); }  // ; may be ommited in complex lines
+  | STRUCT_KEYWORD '{' STRUCT_FIELDS '}'          { print("Struct definition"); }
+  ;
+
+ARRAY_TYPE : '[' EXPRESSION ']' TYPE ;
+MAP_TYPE   : MAP_KEYWORD '[' TYPE ']' TYPE ;
 MULTIPLE_IDENT: 
   FULL_IDENTIFICATOR 
   | MULTIPLE_IDENT ',' FULL_IDENTIFICATOR 

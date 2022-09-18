@@ -70,28 +70,29 @@ range		{ ins_token = 0; return RANGE_KEYWORD;  					}
 return		{ ins_token = 1; return RETURN_KEYWORD; 	}
 falltrough	{ ins_token = 1; return FALL_KEYWORD;		}
 var 		{ ins_token = 0; return VAR_KEYWORD;  }
-int8		{ ins_token = 0; return INT_TYPE; }
-int16		{ ins_token = 0; return INT_TYPE; }
-int32 		{ ins_token = 0; return INT_TYPE; }
-int64		{ ins_token = 0; return INT_TYPE; }
-uint8		{ ins_token = 0; return INT_TYPE; }
-uint16 		{ ins_token = 0; return INT_TYPE; }
-uint32		{ ins_token = 0;  return INT_TYPE; }
-uint64		{ ins_token = 0; return INT_TYPE; }
-byte		{ ins_token = 0; return INT_TYPE; }
-rune		{ ins_token = 0; return INT_TYPE; }
-int			{ ins_token = 0; return INT_TYPE; }
-uint		{ ins_token = 0; return INT_TYPE; }
+int8		{ ins_token = 1; return INT_TYPE; }
+int16		{ ins_token = 1; return INT_TYPE; }
+int32 		{ ins_token = 1; return INT_TYPE; }
+int64		{ ins_token = 1; return INT_TYPE; }
+uint8		{ ins_token = 1; return INT_TYPE; }
+uint16 		{ ins_token = 1; return INT_TYPE; }
+uint32		{ ins_token = 1;  return INT_TYPE; }
+uint64		{ ins_token = 1; return INT_TYPE; }
+byte		{ ins_token = 1; return INT_TYPE; }
+rune		{ ins_token = 1; return INT_TYPE; }
+int			{ ins_token = 1; return INT_TYPE; }
+uint		{ ins_token = 1; return INT_TYPE; }
 
-float32		{ ins_token = 0; return FLOAT_TYPE; }
-float64		{ ins_token = 0; return FLOAT_TYPE; }
+float32		{ ins_token = 1; return FLOAT_TYPE; }
+float64		{ ins_token = 1; return FLOAT_TYPE; }
 
-complex64	{ ins_token = 0; return COMPLEX_TYPE; }
-complex128	{ ins_token = 0; return COMPLEX_TYPE; }
+complex64	{ ins_token = 1; return COMPLEX_TYPE; }
+complex128	{ ins_token = 1; return COMPLEX_TYPE; }
 
-bool		{ ins_token = 0; return BOOL_TYPE; 	}
-string 		{ ins_token = 0; return STRING_TYPE; 	}
+bool		{ ins_token = 1; return BOOL_TYPE; 	}
+string 		{ ins_token = 1; return STRING_TYPE; 	}
 
+select		{ ins_token = 0; return SELECT_KEYWORD; }
 const 		{ ins_token = 0; return CONST_KEYWORD; 	}
 type		{ ins_token = 0; return TYPE_KEYWORD; }	
 struct 		{ ins_token = 0; return STRUCT_KEYWORD; }
@@ -99,8 +100,9 @@ interface 	{ ins_token = 0; return INTERFACE_KEYWORD; }
 chan		{ ins_token = 0; return CHAN_KEYWORD;   }
 nil			{ ins_token = 0; return NIL_KEYWORD; 	}
 defer 		{ ins_token = 0; return DEFER_KEYWORD; }
-
-"go"		{ ins_token = 0; return GO_KEYWORD; }
+goto		{ ins_token = 0; return GOTO_KEYWORD;	}	
+go			{ ins_token = 0; return GO_KEYWORD; 	}
+falltrough	{ ins_token = 0; return FALL_KEYWORD; 	}
 
 ">>"		{ ins_token = 0; return SHIFT_RIGHT; 	}
 "<<"		{ ins_token = 0; return SHIFT_LEFT;	}
