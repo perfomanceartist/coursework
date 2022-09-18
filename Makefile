@@ -6,7 +6,7 @@ y.tab.c: cw.y
 	./bison/win_bison.exe -d  cw.y 
 
 lex.yy.c: cw.l
-	./bison/win_flex.exe cw.l
+	./bison/win_flex cw.l
 
 
 clean:

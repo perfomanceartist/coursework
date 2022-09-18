@@ -340,15 +340,15 @@ RVALUE :
   | VALUE SHIFT_LEFT RVALUE
   | VALUE SHIFT_RIGHT RVALUE
   | NOT_OPERATION RVALUE                      { print("Denying expression"); }  
-  | TYPE '{' INITIALIZER '}'                            
+  //| TYPE '{' INITIALIZER '}'                            
 
-  | '&' TYPE '{' INITIALIZER '}'         
-  | IDENTIFICATOR '{' INITIALIZER '}'                   
-  | TYPE '{' FUNCTION_CALL_ARGUMENTS '}'                
-  | IDENTIFICATOR '{' FUNCTION_CALL_ARGUMENTS '}'      
+  //| '&' TYPE '{' INITIALIZER '}'         
+  //| IDENTIFICATOR '{' INITIALIZER '}'                   
+ // | TYPE '{' FUNCTION_CALL_ARGUMENTS '}'                
+ // | IDENTIFICATOR '{' FUNCTION_CALL_ARGUMENTS '}'      
   | ANON_FUNCTION   
   | '(' RVALUE ')'
-  | '&' RVALUE
+  //| '&' RVALUE
   ;
 
 VALUE:
