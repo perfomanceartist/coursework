@@ -39,6 +39,7 @@ char letter;
 
 %%
 
+
 S :  
   PACKAGE  ';' GLOBALS 
   | PACKAGE  ';'
@@ -48,6 +49,7 @@ S :
 
 PACKAGE : 
   PACKAGE_KEYWORD IDENTIFICATOR                            { print("Package declaration"); } ;    
+
 
 IMPORT : IMPORT_KEYWORD IMPORT_SPEC                            { print("Single module imported"); }
   | IMPORT_KEYWORD '('   ')'                                { print("Importing modules with brackets"); }
@@ -66,12 +68,14 @@ IMPORT_MULTIPLE_SPECS :
   ;
 
 
+
 GLOBALS : 
   GLOBAL
   | GLOBALS GLOBAL
   ;
 
 GLOBAL:
+
   FUNCTION ';'
   | IMPORT ';'
   | TYPEDECL ';'
@@ -82,6 +86,7 @@ TYPEDECL:
   TYPE_KEYWORD TYPESPEC
   | TYPE_KEYWORD '(' ')'
   | TYPE_KEYWORD '(' MULTIPLE_TYPESPEC ')'
+
   ;
 
 MULTIPLE_TYPESPEC:
@@ -89,9 +94,11 @@ MULTIPLE_TYPESPEC:
   | MULTIPLE_TYPESPEC TYPESPEC ';'
   ;
 
+
 TYPESPEC:
   IDENTIFICATOR TYPEVAL           { print("Extra type definition"); } 
   | IDENTIFICATOR '=' TYPEVAL     { print("Alyas definition"); } 
+
   ;
 
 
@@ -111,6 +118,7 @@ INTERFACE_FIELD:
 INTERFACE_METHOD_ARGS:
   TYPEVAL
   | INTERFACE_METHOD_ARGS ',' TYPEVAL
+
   ;
 
 STRUCT_FIELDS:
@@ -130,6 +138,7 @@ STRUCT_EMBEDDED_FIELD:
   | TypeName  TypeArgs 
   | '*'  TypeName  
   | '*'  TypeName  TypeArgs 
+
   ;
 
 TypeName  : IDENTIFICATOR | QUALIFIED_IDENT ;  // SHIFT/REDUCE
@@ -150,6 +159,7 @@ QUALIFIED_IDENT: IDENTIFICATOR '.' IDENTIFICATOR ;
 FUNCTION : FUNC_KEYWORD IDENTIFICATOR SIGNATURE BLOCK { print("Function declaration"); }
   | FUNC_KEYWORD '(' IDENTIFICATOR TYPE ')' IDENTIFICATOR SIGNATURE BLOCK { print("Method declaration"); }//QUESTION 
   ;
+
 
 ANON_FUNCTION: FUNC_KEYWORD  SIGNATURE  BLOCK  ;
 
@@ -173,6 +183,7 @@ FUNC_PARAMETER_GROUPS : FUNC_PARAMETER_GROUP
 
 FUNC_RESULT : 
   TYPE                { print("Single unnamed function result"); }
+
   | '(' FUNC_RESULT_NAMED ')'       { print("Multiple named function result"); }
   | '(' FUNC_RESULT_UNNAMED ')'     { print("Multiple unnamed function result"); }
   | '(' ')'
@@ -186,6 +197,7 @@ FUNC_RESULT_UNNAMED :
 FUNC_RESULT_NAMED :
   IDENTIFICATOR TYPE        { print("Type in named function result"); }//QUESTION
   | FUNC_RESULT_NAMED ',' IDENTIFICATOR TYPE  { print("Type in named function result"); }//QUESTION
+
   ;
 
 BLOCK : 
@@ -238,6 +250,7 @@ FOR :
   FOR_KEYWORD FOR_INIT ';' FOR_CONDITION ';' FOR_AFTER BLOCK { print("For-loop"); }
   | FOR_KEYWORD  FOR_CONDITION BLOCK                         { print("Shortened for-loop"); }
   | FOR_KEYWORD MULTIPLE_IDENT COLON_EQ RANGE_KEYWORD FULL_IDENTIFICATOR BLOCK { print("For in range loop"); }
+
   ;
 
 FOR_INIT : SHORT_DEFINING       { print("Short defining in For-loop init "); }
@@ -292,10 +305,12 @@ IF_ELSE_IF:
   | IF_ELSE_IF ELSE_KEYWORD CONDITION           { print("Else-if condition"); }
   ;
 
+
 CONDITION : 
   IF_KEYWORD LOGICAL_EXPRESSION BLOCK 
   | IF_KEYWORD SHORT_DEFINING ';' LOGICAL_EXPRESSION BLOCK
   | IF_KEYWORD ASSIGNMENT ';' LOGICAL_EXPRESSION BLOCK
+
   ;
 
 LOGICAL_EXPRESSION :
@@ -326,7 +341,8 @@ RVALUE :
   | VALUE SHIFT_RIGHT RVALUE
   | NOT_OPERATION RVALUE                      { print("Denying expression"); }  
   | TYPE '{' INITIALIZER '}'                            
-  | '&' TYPE '{' INITIALIZER '}'                            
+
+  | '&' TYPE '{' INITIALIZER '}'         
   | IDENTIFICATOR '{' INITIALIZER '}'                   
   | TYPE '{' FUNCTION_CALL_ARGUMENTS '}'                
   | IDENTIFICATOR '{' FUNCTION_CALL_ARGUMENTS '}'      
@@ -438,11 +454,13 @@ TYPE:
   | '[' ']' TYPE
   | '*' TYPE //Создает конфликт свептка/свертка с ???
   | FULL_IDENTIFICATOR
+
   | STRUCT_KEYWORD '{' '}'                        { print("Empty struct definition"); }
   | STRUCT_KEYWORD '{' STRUCT_FIELD '}'           { print("Empty struct definition"); }  // ; may be ommited in complex lines
   | STRUCT_KEYWORD '{' STRUCT_FIELDS '}'          { print("Struct definition"); }
   | INTERFACE_KEYWORD '{'  '}'                    { print("Empty interface definition"); }
   | INTERFACE_KEYWORD '{' INTERFACE_FIELDS '}'    { print("Interface definition"); }
+
   ;
 
 MULTIPLE_IDENT: 

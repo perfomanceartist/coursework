@@ -49,6 +49,8 @@
 <C_COMMENT>.    { }
 
 [/][/].*    {  ;					}
+[`].*		{  ;					}
+
 
 
 
@@ -158,6 +160,7 @@ false						{ ins_token = 1; return TRUE_FALSE;   	}
 							if (flag == 1) return ';'; 
 						}
 ;						{ ins_token = 0;  return ';'; }
+
 
 
 "&"			{  return yytext[0];	}
