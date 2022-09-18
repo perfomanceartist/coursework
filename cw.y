@@ -18,7 +18,7 @@ char letter;
 %token STRING INTEGER FLOAT TRUE_FALSE COMPLEX
 %token TYPE_KEYWORD STRUCT_KEYWORD INTERFACE_KEYWORD
 %token CONST_KEYWORD PACKAGE_KEYWORD IMPORT_KEYWORD VAR_KEYWORD  FUNC_KEYWORD RETURN_KEYWORD FALL_KEYWORD
-%token IF_KEYWORD ELSE_KEYWORD SWITCH_KEYWORD CASE_KEYWORD DEFAULT_KEYWORD
+%token IF_KEYWORD ELSE_KEYWORD SWITCH_KEYWORD CASE_KEYWORD DEFAULT_KEYWORD CHAN_KEYWORD LEFT_ARROW
 %token EQ_RELATION GREATER_RELATION LESS_RELATION EQ_GREATER_RELATION EQ_LESS_RELATION NOT_EQ_RELATION
 %token FOR_KEYWORD BREAK_KEYWORD CONTINUE_KEYWORD RANGE_KEYWORD GO_KEYWORD
 %token INT_TYPE FLOAT_TYPE  COMPLEX_TYPE  BOOL_TYPE STRING_TYPE
@@ -101,7 +101,9 @@ INTERFACE_FIELDS:
   ;
 
 INTERFACE_FIELD: 
-  IDENTIFICATOR '('  ')' FUNC_RESULT { print("Interface method "); }
+  IDENTIFICATOR '('  ')'  { print("Interface method "); }
+  | IDENTIFICATOR '('  ')' FUNC_RESULT { print("Interface method "); }
+  | IDENTIFICATOR '(' INTERFACE_METHOD_ARGS')'  { print("Interface method "); }
   | IDENTIFICATOR '(' INTERFACE_METHOD_ARGS')' FUNC_RESULT { print("Interface method "); }
   | IDENTIFICATOR { print("Inner interface "); }
   ;
@@ -145,50 +147,45 @@ QUALIFIED_IDENT: IDENTIFICATOR '.' IDENTIFICATOR ;
 
 
 
-FUNCTION : FUNC_KEYWORD IDENTIFICATOR '(' FUNC_PARAMS ')' FUNC_RESULT  BLOCK { print("Function declaration"); }
-//  | FUNC_KEYWORD '(' TYPEVAL TYPEVAL ')' IDENTIFICATOR '(' FUNC_PARAMS ')' FUNC_RESULT  '{' FUNCTION_STATEMENTS '}' { print("Method declaration"); }//QUESTION
-  | FUNC_KEYWORD '(' IDENTIFICATOR TYPE ')' IDENTIFICATOR '(' FUNC_PARAMS ')' FUNC_RESULT  '{' FUNCTION_STATEMENTS '}' { print("Method declaration"); }//QUESTION 
+FUNCTION : FUNC_KEYWORD IDENTIFICATOR SIGNATURE BLOCK { print("Function declaration"); }
+  | FUNC_KEYWORD '(' IDENTIFICATOR TYPE ')' IDENTIFICATOR SIGNATURE BLOCK { print("Method declaration"); }//QUESTION 
   ;
 
-ANON_FUNCTION:
-  FUNC_KEYWORD  '(' FUNC_PARAMS ')' FUNC_RESULT  BLOCK
+ANON_FUNCTION: FUNC_KEYWORD  SIGNATURE  BLOCK  ;
+
+SIGNATURE:
+  '(' FUNC_PARAMETER_GROUPS ')' FUNC_RESULT 
+  | '('  ')' FUNC_RESULT 
+  | '(' FUNC_PARAMETER_GROUPS ')' 
+  | '('  ')' 
   ;
 
-
-FUNCTION_STATEMENTS:
-  STATEMENT_LIST
-  ;
 
 FUNC_PARAMETER_GROUP :  
-  //MULTIPLE_IDENT TYPEVAL { print("Group of parameters"); }
   MULTIPLE_IDENT TYPE { print("Group of parameters"); }
-  | MULTIPLE_IDENT FULL_IDENTIFICATOR { print("Group of parameters"); }
-  | IDENTIFICATOR DOT_DOT_DOT TYPEVAL { print("Dot dot dot parameter"); }
+  | IDENTIFICATOR DOT_DOT_DOT TYPE { print("Dot dot dot parameter"); }
   ;
 
-FUNC_PARAMS: FUNC_PARAMETER_GROUPS
-  |
-  ;
+
 FUNC_PARAMETER_GROUPS : FUNC_PARAMETER_GROUP 
   | FUNC_PARAMETER_GROUPS ',' FUNC_PARAMETER_GROUP
   ;
 
 FUNC_RESULT : 
-  TYPEVAL                 { print("Single unnamed function result"); }
+  TYPE                { print("Single unnamed function result"); }
   | '(' FUNC_RESULT_NAMED ')'       { print("Multiple named function result"); }
   | '(' FUNC_RESULT_UNNAMED ')'     { print("Multiple unnamed function result"); }
-  |
+  | '(' ')'
   ;
 
 FUNC_RESULT_UNNAMED : 
-  TYPEVAL          { print("Type in unnamed function result"); }
-  | FUNC_RESULT_UNNAMED ',' TYPEVAL    { print("Type in unnamed function result"); }
-  |
+  TYPE          { print("Type in unnamed function result"); }
+  | FUNC_RESULT_UNNAMED ',' TYPE    { print("Type in unnamed function result"); }
   ;
 
 FUNC_RESULT_NAMED :
-  TYPEVAL TYPEVAL        { print("Type in named function result"); }//QUESTION
-  | FUNC_RESULT_NAMED ',' TYPEVAL TYPEVAL  { print("Type in named function result"); }//QUESTION
+  IDENTIFICATOR TYPE        { print("Type in named function result"); }//QUESTION
+  | FUNC_RESULT_NAMED ',' IDENTIFICATOR TYPE  { print("Type in named function result"); }//QUESTION
   ;
 
 BLOCK : 
@@ -329,7 +326,7 @@ RVALUE :
   | VALUE SHIFT_RIGHT RVALUE
   | NOT_OPERATION RVALUE                      { print("Denying expression"); }  
   | TYPE '{' INITIALIZER '}'                            
-//  | '&' TYPE '{' INITIALIZER '}'                            
+  | '&' TYPE '{' INITIALIZER '}'                            
   | IDENTIFICATOR '{' INITIALIZER '}'                   
   | TYPE '{' FUNCTION_CALL_ARGUMENTS '}'                
   | IDENTIFICATOR '{' FUNCTION_CALL_ARGUMENTS '}'      
@@ -339,18 +336,23 @@ RVALUE :
   ;
 
 VALUE:
-  INTEGER
-  | STRING
-  | FLOAT
-  | TRUE_FALSE
-  | COMPLEX
-  | NIL_KEYWORD
+  BASIC_LITERAL
   | FUNCTION_CALL
   | FULL_IDENTIFICATOR
   | FULL_IDENTIFICATOR ARRAY_INDEXATION
 //  | '&' FULL_IDENTIFICATOR            { print("Getting address of identificator");}
   | '*' FULL_IDENTIFICATOR            { print("*FULL");}
   ;
+
+OPERAND:
+  LITERAL
+ // | '(' EXPRESSION ')'
+  | IDENTIFICATOR
+  | QUALIFIED_IDENT
+  ;
+
+BASIC_LITERAL: INTEGER | STRING | FLOAT | TRUE_FALSE  | COMPLEX | NIL_KEYWORD ;
+LITERAL: BASIC_LITERAL | ANON_FUNCTION ; // | COMPOSITE_LITERAL;
 
 
 INITIALIZER:

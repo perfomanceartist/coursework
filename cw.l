@@ -94,7 +94,7 @@ const 		{ ins_token = 0; return CONST_KEYWORD; 	}
 type		{ ins_token = 0; return TYPE_KEYWORD; }	
 struct 		{ ins_token = 0; return STRUCT_KEYWORD; }
 interface 	{ ins_token = 0; return INTERFACE_KEYWORD; }
-
+chan		{ ins_token = 0; return CHAN_KEYWORD;   }
 nil			{ ins_token = 0; return NIL_KEYWORD; 	}
 defer 		{ ins_token = 0; return DEFER_KEYWORD; }
 
@@ -138,7 +138,7 @@ false						{ ins_token = 1; return TRUE_FALSE;   	}
 "||"		{ ins_token = 0; return OR_OPERATION; }
 
 "..."		{ ins_token = 0; return DOT_DOT_DOT; }
-
+"<-"		{ ins_token = 0; return LEFT_ARROW; }
 [-+=] 		{ ins_token = 0; return yytext[0];		}
 [\*]*       		 	{	ins_token = 0; return '*'; }
 
