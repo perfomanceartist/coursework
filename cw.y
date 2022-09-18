@@ -17,8 +17,8 @@ char letter;
 %token  IDENTIFICATOR COLON_EQ DOT_DOT_DOT NIL_KEYWORD DEFER_KEYWORD SHIFT_LEFT SHIFT_RIGHT OPER_ASSIGNMENT MAP_KEYWORD
 %token STRING INTEGER FLOAT TRUE_FALSE COMPLEX
 %token TYPE_KEYWORD STRUCT_KEYWORD INTERFACE_KEYWORD
-%token CONST_KEYWORD PACKAGE_KEYWORD IMPORT_KEYWORD VAR_KEYWORD  FUNC_KEYWORD RETURN_KEYWORD
-%token IF_KEYWORD ELSE_KEYWORD SWITCH_KEYWORD CASE_KEYWORD DEFAULT_KEYWORD
+%token CONST_KEYWORD PACKAGE_KEYWORD IMPORT_KEYWORD VAR_KEYWORD  FUNC_KEYWORD RETURN_KEYWORD FALL_KEYWORD
+%token IF_KEYWORD ELSE_KEYWORD SWITCH_KEYWORD CASE_KEYWORD DEFAULT_KEYWORD CHAN_KEYWORD LEFT_ARROW
 %token EQ_RELATION GREATER_RELATION LESS_RELATION EQ_GREATER_RELATION EQ_LESS_RELATION NOT_EQ_RELATION
 %token FOR_KEYWORD BREAK_KEYWORD CONTINUE_KEYWORD RANGE_KEYWORD GO_KEYWORD
 %token INT_TYPE FLOAT_TYPE  COMPLEX_TYPE  BOOL_TYPE STRING_TYPE
@@ -39,127 +39,179 @@ char letter;
 
 %%
 
-S :  BEFORE_PACKAGE PACKAGE  '\n' GLOBALS ;
 
-BEFORE_PACKAGE:
-  BEFORE_PACKAGE '\n'
-  |
+S :  
+  PACKAGE  ';' GLOBALS 
+  | PACKAGE  ';'
   ;
+
+
 
 PACKAGE : 
   PACKAGE_KEYWORD IDENTIFICATOR                            { print("Package declaration"); } ;    
 
-IMPORT : IMPORT_KEYWORD STRING                                  { print("Single module imported"); }
-  | IMPORT_KEYWORD '(' '\n' IMPORT_MULTIPLE_STRING ')'          { print("Importing modules with brackets"); }
+
+IMPORT : IMPORT_KEYWORD IMPORT_SPEC                            { print("Single module imported"); }
+  | IMPORT_KEYWORD '('   ')'                                { print("Importing modules with brackets"); }
+  | IMPORT_KEYWORD '('  IMPORT_MULTIPLE_SPECS ')'          { print("Importing modules with brackets"); }
   ;
 
-IMPORT_MULTIPLE_STRING :   
-  IMPORT_MULTIPLE_FIELD  { print("Module name"); }
-  | IMPORT_MULTIPLE_STRING IMPORT_MULTIPLE_FIELD { print("Module name"); }
-  |
+IMPORT_SPEC:  
+  STRING                        { print("Module path"); }
+  | IDENTIFICATOR STRING        { print("Module path with identificator"); }
+  | '.' STRING                  { print("Module path with dot"); }
   ;
-IMPORT_MULTIPLE_FIELD:
-  STRING
-  | '\n'
-//  |
+
+IMPORT_MULTIPLE_SPECS :   
+  IMPORT_SPEC ';'                          
+  | IMPORT_MULTIPLE_SPECS IMPORT_SPEC ';'  
   ;
+
+
+
 GLOBALS : 
   GLOBAL
-  | GLOBALS '\n' GLOBAL
+  | GLOBALS GLOBAL
   ;
 
 GLOBAL:
-  FUNCTION
-  | IMPORT
-  | TYPEDEF
-  | DECLARATION   
-  | 
+
+  FUNCTION ';'
+  | IMPORT ';'
+  | TYPEDECL ';'
+  | DECLARATION    ';'
+  ;
+
+TYPEDECL:
+  TYPE_KEYWORD TYPESPEC
+  | TYPE_KEYWORD '(' ')'
+  | TYPE_KEYWORD '(' MULTIPLE_TYPESPEC ')'
+
+  ;
+
+MULTIPLE_TYPESPEC:
+  TYPESPEC ';'
+  | MULTIPLE_TYPESPEC TYPESPEC ';'
   ;
 
 
-TYPEDEF:
-  TYPE_KEYWORD TYPEVAL TYPEVAL     { print("Extra type definition"); }// QUESTION
- // | TYPE_KEYWORD IDENTIFICATOR STRUCT_KEYWORD '{' STRUCT_FIELDS '}' { print("Struct definition"); }
-  | TYPE_KEYWORD IDENTIFICATOR INTERFACE_KEYWORD '{' INTERFACE_FIELDS '}' { print("Interface definition"); }
+TYPESPEC:
+  IDENTIFICATOR TYPEVAL           { print("Extra type definition"); } 
+  | IDENTIFICATOR '=' TYPEVAL     { print("Alyas definition"); } 
+
   ;
+
 
 INTERFACE_FIELDS:
-  INTERFACE_FIELDS INTERFACE_FIELD '\n'
-  |
+  INTERFACE_FIELD ';'
+  | INTERFACE_FIELDS INTERFACE_FIELD ';'
   ;
 
 INTERFACE_FIELD: 
-  IDENTIFICATOR '(' INTERFACE_METHOD_ARGS')' FUNC_RESULT { print("Interface method "); }
+  IDENTIFICATOR '('  ')'  { print("Interface method "); }
+  | IDENTIFICATOR '('  ')' FUNC_RESULT { print("Interface method "); }
+  | IDENTIFICATOR '(' INTERFACE_METHOD_ARGS')'  { print("Interface method "); }
+  | IDENTIFICATOR '(' INTERFACE_METHOD_ARGS')' FUNC_RESULT { print("Interface method "); }
   | IDENTIFICATOR { print("Inner interface "); }
-  |
   ;
 
 INTERFACE_METHOD_ARGS:
   TYPEVAL
   | INTERFACE_METHOD_ARGS ',' TYPEVAL
-  |
+
   ;
 
 STRUCT_FIELDS:
-  STRUCT_FIELD '\n'
-  |STRUCT_FIELDS  STRUCT_FIELD '\n'
-  |
+  STRUCT_FIELD ';'
+  | STRUCT_FIELDS  STRUCT_FIELD ';'  
   ;
 
 STRUCT_FIELD: 
-  MULTIPLE_IDENT TYPEVAL 
-  |
+  MULTIPLE_IDENT TYPEVAL            //{ print("Multiple ident type"); }
+  | STRUCT_EMBEDDED_FIELD    
+  | MULTIPLE_IDENT TYPEVAL STRING
+  | STRUCT_EMBEDDED_FIELD  STRING
   ;
 
-FUNCTION : FUNC_KEYWORD IDENTIFICATOR '(' FUNC_PARAMS ')' FUNC_RESULT  '{' FUNCTION_STATEMENTS '}' { print("Function declaration"); }
-//  | FUNC_KEYWORD '(' TYPEVAL TYPEVAL ')' IDENTIFICATOR '(' FUNC_PARAMS ')' FUNC_RESULT  '{' FUNCTION_STATEMENTS '}' { print("Method declaration"); }//QUESTION
-  | FUNC_KEYWORD '(' IDENTIFICATOR TYPE ')' IDENTIFICATOR '(' FUNC_PARAMS ')' FUNC_RESULT  '{' FUNCTION_STATEMENTS '}' { print("Method declaration"); }//QUESTION 
+STRUCT_EMBEDDED_FIELD:
+  TypeName  
+  | TypeName  TypeArgs 
+  | '*'  TypeName  
+  | '*'  TypeName  TypeArgs 
+
   ;
 
-ANON_FUNCTION:
-  FUNC_KEYWORD  '(' FUNC_PARAMS ')' FUNC_RESULT  '{' FUNCTION_STATEMENTS '}'
+TypeName  : IDENTIFICATOR | QUALIFIED_IDENT ;  // SHIFT/REDUCE
+TypeArgs  : 
+  '[' MULTIPLE_TYPE  ']' 
+  | '[' MULTIPLE_TYPE ',' ']' 
+  ;
+
+MULTIPLE_TYPE:
+  TYPE
+  | MULTIPLE_TYPE ',' TYPE
+  ;
+
+QUALIFIED_IDENT: IDENTIFICATOR '.' IDENTIFICATOR ;
+
+
+
+FUNCTION : FUNC_KEYWORD IDENTIFICATOR SIGNATURE BLOCK { print("Function declaration"); }
+  | FUNC_KEYWORD '(' IDENTIFICATOR TYPE ')' IDENTIFICATOR SIGNATURE BLOCK { print("Method declaration"); }//QUESTION 
   ;
 
 
-FUNCTION_STATEMENTS:
-  STATEMENTS
-  |
+ANON_FUNCTION: FUNC_KEYWORD  SIGNATURE  BLOCK  ;
+
+SIGNATURE:
+  '(' FUNC_PARAMETER_GROUPS ')' FUNC_RESULT 
+  | '('  ')' FUNC_RESULT 
+  | '(' FUNC_PARAMETER_GROUPS ')' 
+  | '('  ')' 
   ;
+
 
 FUNC_PARAMETER_GROUP :  
-  //MULTIPLE_IDENT TYPEVAL { print("Group of parameters"); }
   MULTIPLE_IDENT TYPE { print("Group of parameters"); }
-  | MULTIPLE_IDENT FULL_IDENTIFICATOR { print("Group of parameters"); }
-  | IDENTIFICATOR DOT_DOT_DOT TYPEVAL { print("Dot dot dot parameter"); }
+  | IDENTIFICATOR DOT_DOT_DOT TYPE { print("Dot dot dot parameter"); }
   ;
 
-FUNC_PARAMS: FUNC_PARAMETER_GROUPS
-  |
-  ;
+
 FUNC_PARAMETER_GROUPS : FUNC_PARAMETER_GROUP 
   | FUNC_PARAMETER_GROUPS ',' FUNC_PARAMETER_GROUP
   ;
 
 FUNC_RESULT : 
-  TYPEVAL                 { print("Single unnamed function result"); }
+  TYPE                { print("Single unnamed function result"); }
+
   | '(' FUNC_RESULT_NAMED ')'       { print("Multiple named function result"); }
   | '(' FUNC_RESULT_UNNAMED ')'     { print("Multiple unnamed function result"); }
-  |
+  | '(' ')'
   ;
 
 FUNC_RESULT_UNNAMED : 
-  TYPEVAL          { print("Type in unnamed function result"); }
-  | FUNC_RESULT_UNNAMED ',' TYPEVAL    { print("Type in unnamed function result"); }
-  |
+  TYPE          { print("Type in unnamed function result"); }
+  | FUNC_RESULT_UNNAMED ',' TYPE    { print("Type in unnamed function result"); }
   ;
 
 FUNC_RESULT_NAMED :
-  TYPEVAL TYPEVAL        { print("Type in named function result"); }//QUESTION
-  | FUNC_RESULT_NAMED ',' TYPEVAL TYPEVAL  { print("Type in named function result"); }//QUESTION
+  IDENTIFICATOR TYPE        { print("Type in named function result"); }//QUESTION
+  | FUNC_RESULT_NAMED ',' IDENTIFICATOR TYPE  { print("Type in named function result"); }//QUESTION
+
   ;
 
-STATEMENTS : STATEMENT 
-  | STATEMENTS  STATEMENT 
+BLOCK : 
+  '{' STATEMENT_LIST '}' 
+  | '{' STATEMENT '}'                   // ; may be ommited in complex lines
+  ;
+STATEMENT_LIST:
+  STATEMENTS
+  |
+  ;
+
+
+STATEMENTS : STATEMENT ';'
+  | STATEMENTS  STATEMENT ';' 
   ;
 
 STATEMENT : DECLARATION  
@@ -172,7 +224,6 @@ STATEMENT : DECLARATION
   | BREAK_KEYWORD 
   | CONTINUE_KEYWORD 
   | RETURN 
-  | '\n'
   | DEFER_KEYWORD FUNCTION_CALL   { print("Defer function call");}
   | GO_KEYWORD  FUNCTION_CALL     { print("Starting goroutine"); }
   ;
@@ -196,9 +247,10 @@ ASSIGNMENT :
   | FULL_IDENTIFICATOR OPER_ASSIGNMENT RVALUE  { print("Operation + assignment");}
   ;
 FOR :
-  FOR_KEYWORD FOR_INIT ';' FOR_CONDITION ';' FOR_AFTER '{' STATEMENTS '}' { print("For-loop"); }
-  | FOR_KEYWORD  FOR_CONDITION '{' STATEMENTS '}'                         { print("Shortened for-loop"); }
-  | FOR_KEYWORD MULTIPLE_IDENT COLON_EQ RANGE_KEYWORD FULL_IDENTIFICATOR '{' STATEMENTS '}' { print("For in range loop"); }
+  FOR_KEYWORD FOR_INIT ';' FOR_CONDITION ';' FOR_AFTER BLOCK { print("For-loop"); }
+  | FOR_KEYWORD  FOR_CONDITION BLOCK                         { print("Shortened for-loop"); }
+  | FOR_KEYWORD MULTIPLE_IDENT COLON_EQ RANGE_KEYWORD FULL_IDENTIFICATOR BLOCK { print("For in range loop"); }
+
   ;
 
 FOR_INIT : SHORT_DEFINING       { print("Short defining in For-loop init "); }
@@ -228,9 +280,10 @@ DECLARATION:
 
 
 SWITCH :
-  SWITCH_KEYWORD '(' RVALUE ')' '{' '\n' SWITCH_CASES '}'
-  | SWITCH_KEYWORD '(' RVALUE ')' '{' '\n' SWITCH_CASES DEFAULT_KEYWORD ':' STATEMENTS '}' { print("Default case in switch"); }
+  SWITCH_KEYWORD '(' RVALUE ')' '{' SWITCH_CASES '}'
+  | SWITCH_KEYWORD '(' RVALUE ')' '{' SWITCH_CASES DEFAULT_KEYWORD ':' STATEMENT_LIST '}' { print("Default case in switch"); }
   ;
+
 
 SWITCH_VALUES: 
  SWITCH_VALUES ',' RVALUE
@@ -238,13 +291,13 @@ SWITCH_VALUES:
  ;
 
 SWITCH_CASES:
-  CASE_KEYWORD SWITCH_VALUES ':' STATEMENTS   { print("Case in switch"); }
-  | SWITCH_CASES  CASE_KEYWORD SWITCH_VALUES ':' STATEMENTS { print("Case in switch"); }
+  CASE_KEYWORD SWITCH_VALUES ':' STATEMENT_LIST   { print("Case in switch"); }
+  | SWITCH_CASES  CASE_KEYWORD SWITCH_VALUES ':' STATEMENT_LIST { print("Case in switch"); }
   ;
 
 IF_ELSE_STATEMENT: 
   IF_ELSE_IF
-  | IF_ELSE_IF ELSE_KEYWORD '{' STATEMENTS '}'  { print("Else condition"); } 
+  | IF_ELSE_IF ELSE_KEYWORD BLOCK  { print("Else condition"); } 
   ;
 
 IF_ELSE_IF:
@@ -252,12 +305,12 @@ IF_ELSE_IF:
   | IF_ELSE_IF ELSE_KEYWORD CONDITION           { print("Else-if condition"); }
   ;
 
-CONDITION : IF_KEYWORD LOGICAL_EXPRESSION '{' STATEMENTS '}' 
-  | IF_KEYWORD LOGICAL_EXPRESSION '{' '}' 
-  | IF_KEYWORD SHORT_DEFINING ';' LOGICAL_EXPRESSION '{' '}'
-  | IF_KEYWORD SHORT_DEFINING ';' LOGICAL_EXPRESSION '{' STATEMENTS '}'
-  | IF_KEYWORD ASSIGNMENT ';' LOGICAL_EXPRESSION '{' '}'
-  | IF_KEYWORD ASSIGNMENT ';' LOGICAL_EXPRESSION '{' STATEMENTS '}'
+
+CONDITION : 
+  IF_KEYWORD LOGICAL_EXPRESSION BLOCK 
+  | IF_KEYWORD SHORT_DEFINING ';' LOGICAL_EXPRESSION BLOCK
+  | IF_KEYWORD ASSIGNMENT ';' LOGICAL_EXPRESSION BLOCK
+
   ;
 
 LOGICAL_EXPRESSION :
@@ -288,7 +341,8 @@ RVALUE :
   | VALUE SHIFT_RIGHT RVALUE
   | NOT_OPERATION RVALUE                      { print("Denying expression"); }  
   | TYPE '{' INITIALIZER '}'                            
-//  | '&' TYPE '{' INITIALIZER '}'                            
+
+  | '&' TYPE '{' INITIALIZER '}'         
   | IDENTIFICATOR '{' INITIALIZER '}'                   
   | TYPE '{' FUNCTION_CALL_ARGUMENTS '}'                
   | IDENTIFICATOR '{' FUNCTION_CALL_ARGUMENTS '}'      
@@ -298,18 +352,23 @@ RVALUE :
   ;
 
 VALUE:
-  INTEGER
-  | STRING
-  | FLOAT
-  | TRUE_FALSE
-  | COMPLEX
-  | NIL_KEYWORD
+  BASIC_LITERAL
   | FUNCTION_CALL
   | FULL_IDENTIFICATOR
   | FULL_IDENTIFICATOR ARRAY_INDEXATION
 //  | '&' FULL_IDENTIFICATOR            { print("Getting address of identificator");}
   | '*' FULL_IDENTIFICATOR            { print("*FULL");}
   ;
+
+OPERAND:
+  LITERAL
+ // | '(' EXPRESSION ')'
+  | IDENTIFICATOR
+  | QUALIFIED_IDENT
+  ;
+
+BASIC_LITERAL: INTEGER | STRING | FLOAT | TRUE_FALSE  | COMPLEX | NIL_KEYWORD ;
+LITERAL: BASIC_LITERAL | ANON_FUNCTION ; // | COMPOSITE_LITERAL;
 
 
 INITIALIZER:
@@ -351,15 +410,16 @@ SHORT_DEFINING:
   ;
 
 MULTIPLE_VARIABLE_DECLARATION:
+  MULTIPLE_VARIABLE_DECLARATION MULTIPLE_VARIABLE_DECL_OPTION ';'
+  | MULTIPLE_VARIABLE_DECL_OPTION ';'
+  ; 
+
+MULTIPLE_VARIABLE_DECL_OPTION:
   VARIABLE_DECLARATION 
   | VARIABLE_DECLARATION_ASSIGNMENT
   | IDENTIFICATOR '=' MULTIPLE_RVALUE
-  | MULTIPLE_VARIABLE_DECLARATION  VARIABLE_DECLARATION
-  | MULTIPLE_VARIABLE_DECLARATION  VARIABLE_DECLARATION_ASSIGNMENT 
-  | MULTIPLE_VARIABLE_DECLARATION  IDENTIFICATOR '=' MULTIPLE_RVALUE
-  | MULTIPLE_VARIABLE_DECLARATION '\n'
-  | '\n'
-  ; 
+  ;
+
 
 VARIABLE_DECLARATION:
   MULTIPLE_IDENT TYPEVAL   
@@ -394,7 +454,13 @@ TYPE:
   | '[' ']' TYPE
   | '*' TYPE //Создает конфликт свептка/свертка с ???
   | FULL_IDENTIFICATOR
-  | STRUCT_KEYWORD '{' STRUCT_FIELDS '}' { print("Struct definition"); }
+
+  | STRUCT_KEYWORD '{' '}'                        { print("Empty struct definition"); }
+  | STRUCT_KEYWORD '{' STRUCT_FIELD '}'           { print("Empty struct definition"); }  // ; may be ommited in complex lines
+  | STRUCT_KEYWORD '{' STRUCT_FIELDS '}'          { print("Struct definition"); }
+  | INTERFACE_KEYWORD '{'  '}'                    { print("Empty interface definition"); }
+  | INTERFACE_KEYWORD '{' INTERFACE_FIELDS '}'    { print("Interface definition"); }
+
   ;
 
 MULTIPLE_IDENT: 
