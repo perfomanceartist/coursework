@@ -14,32 +14,27 @@ int num;
 char letter;
 }
 
-%token  IDENTIFICATOR COLON_EQ DOT_DOT_DOT NIL_KEYWORD DEFER_KEYWORD SHIFT_LEFT SHIFT_RIGHT OPER_ASSIGNMENT MAP_KEYWORD
+%token IDENTIFICATOR COLON_EQ DOT_DOT_DOT DEFER_KEYWORD SHIFT_LEFT SHIFT_RIGHT OPER_ASSIGNMENT MAP_KEYWORD
 %token STRING INTEGER FLOAT TRUE_FALSE COMPLEX
 %token TYPE_KEYWORD STRUCT_KEYWORD INTERFACE_KEYWORD
 %token CONST_KEYWORD PACKAGE_KEYWORD IMPORT_KEYWORD VAR_KEYWORD  FUNC_KEYWORD RETURN_KEYWORD 
 %token IF_KEYWORD ELSE_KEYWORD SWITCH_KEYWORD CASE_KEYWORD DEFAULT_KEYWORD CHAN_KEYWORD LEFT_ARROW SELECT_KEYWORD
 %token EQ_RELATION GREATER_RELATION LESS_RELATION EQ_GREATER_RELATION EQ_LESS_RELATION NOT_EQ_RELATION
 %token FOR_KEYWORD BREAK_KEYWORD CONTINUE_KEYWORD RANGE_KEYWORD GO_KEYWORD GOTO_KEYWORD  FALL_KEYWORD
-%token INT_TYPE FLOAT_TYPE  COMPLEX_TYPE  BOOL_TYPE STRING_TYPE
+//%token INT_TYPE FLOAT_TYPE  COMPLEX_TYPE  BOOL_TYPE STRING_TYPE
 
-%left LEFT_ARROW
-%left LOWER_THAN_RELATION
-%left OR_OPERATION
-%left AND_OPERATION
-%left NOT_OPERATION
-%left EQ_RELATION 
-%left GREATER_RELATION 
-%left LESS_RELATION 
-%left EQ_GREATER_RELATION 
-%left EQ_LESS_RELATION 
-%left NOT_EQ_RELATION
-%left '-' '+' '%'
-%left '*' '/' '|'
-%left '^' '&'
+%right IDENTIFICATOR
+%left '+' '-' 
+%left '*' '/' '%' 
+%left '&' '|' '^' 
 %left SHIFT_LEFT SHIFT_RIGHT
+%left NOT_OPERATION 
+%right '=' 
 
-%nonassoc INCREMENT DECREMENT
+//%nonassoc LOWER_THAN_RELATION
+%left OR_OPERATION AND_OPERATION 
+%left EQ_RELATION GREATER_RELATION  LESS_RELATION  EQ_GREATER_RELATION  EQ_LESS_RELATION  NOT_EQ_RELATION INCREMENT DECREMENT
+%left '(' ')' '{' '}' '[' ']' ',' '.' ';' ':'
 
 
 %%
@@ -50,11 +45,8 @@ S :
   | PACKAGE  ';'
   ;
 
-
-
 PACKAGE : 
   PACKAGE_KEYWORD IDENTIFICATOR                            { print("Package declaration"); } ;    
-
 
 IMPORT : IMPORT_KEYWORD IMPORT_SPEC                            { print("Single module imported"); }
   | IMPORT_KEYWORD '('   ')'                                { print("Importing modules with brackets"); }
@@ -71,8 +63,6 @@ IMPORT_MULTIPLE_SPECS :
   IMPORT_SPEC ';'                          
   | IMPORT_MULTIPLE_SPECS IMPORT_SPEC ';'  
   ;
-
-
 
 GLOBALS : 
   GLOBAL
@@ -119,8 +109,8 @@ INTERFACE_FIELD:
   ;
 
 INTERFACE_METHOD_ARGS:
-  TYPEVAL
-  | INTERFACE_METHOD_ARGS ',' TYPEVAL
+  TYPE
+  | INTERFACE_METHOD_ARGS ',' TYPE
 
   ;
 
@@ -137,29 +127,9 @@ STRUCT_FIELD:
   ;
 
 STRUCT_EMBEDDED_FIELD:
-  TypeName  
-  //| TypeName  TypeArgs              //REDUCE/REDUCE
-  | '*'  TypeName  
-  //| '*'  TypeName  TypeArgs 
-
+  FULL_IDENTIFICATOR  
+  | '*'  FULL_IDENTIFICATOR  
   ;
-
-TypeName  : 
-  FULL_IDENTIFICATOR 
-  //| QUALIFIED_IDENT    // SHIFT/REDUCE
-  ; 
-TypeArgs  : 
-  '[' MULTIPLE_TYPE  ']' 
-  | '[' MULTIPLE_TYPE ',' ']' 
-  ;
-
-MULTIPLE_TYPE:
-  TYPE
-  | MULTIPLE_TYPE ',' TYPE
-  ;
-
-QUALIFIED_IDENT: IDENTIFICATOR '.' IDENTIFICATOR ;
-
 
 
 FUNCTION : FUNC_KEYWORD IDENTIFICATOR SIGNATURE BLOCK { print("Function declaration"); }
@@ -169,11 +139,15 @@ FUNCTION : FUNC_KEYWORD IDENTIFICATOR SIGNATURE BLOCK { print("Function declarat
 
 ANON_FUNCTION: FUNC_KEYWORD  SIGNATURE  BLOCK  ;
 
+
 SIGNATURE:
-  '(' FUNC_PARAMETER_GROUPS ')' FUNC_RESULT 
-  | '('  ')' FUNC_RESULT 
-  | '(' FUNC_PARAMETER_GROUPS ')' 
-  | '('  ')' 
+  SIGN_TST FUNC_RESULT
+  | SIGN_TST 
+  ;
+
+SIGN_TST:
+  '(' FUNC_PARAMETER_GROUPS ')' 
+  | '('  ')'
   ;
 
 
@@ -183,13 +157,13 @@ FUNC_PARAMETER_GROUP :
   ;
 
 
-FUNC_PARAMETER_GROUPS : FUNC_PARAMETER_GROUP 
+FUNC_PARAMETER_GROUPS : 
+  FUNC_PARAMETER_GROUP 
   | FUNC_PARAMETER_GROUPS ',' FUNC_PARAMETER_GROUP
   ;
 
 FUNC_RESULT : 
   TYPE                { print("Single unnamed function result"); }
-
   | '(' FUNC_RESULT_NAMED ')'       { print("Multiple named function result"); }
   | '(' FUNC_RESULT_UNNAMED ')'     { print("Multiple unnamed function result"); }
   | '(' ')'
@@ -225,7 +199,6 @@ STATEMENT :
   | IF_ELSE_STATEMENT 
   | LABELED_STMT
   | SWITCH 
-  //| SELECT
   | SIMPLE_STATEMENT
   | FOR 
   | FALL_KEYWORD
@@ -245,7 +218,7 @@ SIMPLE_STATEMENT:
   | SEND_STMT
   | INC_DEC_STMT
   | Assignment
-  | SHORT_DEFINING
+  | SHORT_DEFINING 
   ;
 
 INC_DEC_STMT: EXPRESSION INCREMENT | EXPRESSION DECREMENT ;
@@ -254,38 +227,23 @@ SEND_STMT: EXPRESSION LEFT_ARROW EXPRESSION ;
 
 RETURN :
   RETURN_KEYWORD
-  | RETURN_KEYWORD ExpressionList
+  | RETURN_KEYWORD EXPRESSIONList
   ;
 
 BREAK:
   BREAK_KEYWORD
-  | BREAK_KEYWORD ExpressionList
+  | BREAK_KEYWORD EXPRESSIONList
   ;
 
 CONTINUE:
   CONTINUE_KEYWORD
-  | CONTINUE_KEYWORD ExpressionList
+  | CONTINUE_KEYWORD EXPRESSIONList
   ;
-
-UNARY_OPERATION : 
-  IDENTIFICATOR INCREMENT
-  | IDENTIFICATOR DECREMENT
-  | INCREMENT IDENTIFICATOR
-  | DECREMENT IDENTIFICATOR 
-  ;
-
-SELECT : SELECT_KEYWORD '{' '}' | SELECT_KEYWORD '{' RepeatingCommClause '}' ;
-RepeatingCommClause: CommClause | RepeatingCommClause CommClause ;
-CommClause : CommCase ':' STATEMENT_LIST ;
-CommCase   : CASE_KEYWORD SEND_STMT| CASE_KEYWORD  RecvStmt| DEFAULT_KEYWORD ;
-RecvStmt   : ExpressionList '=' RecvExpr | SIMPLE_IDENT_LIST COLON_EQ RecvExpr ;
-RecvExpr   : EXPRESSION ;
-
 
 FOR :
-  FOR_KEYWORD FOR_CLAUSE BLOCK { print("For-loop"); }
-  | FOR_KEYWORD  FOR_CONDITION BLOCK                         { print("Shortened for-loop"); }
-  | FOR_KEYWORD FOR_RANGE BLOCK { print("For in range loop"); }
+  FOR_KEYWORD FOR_CLAUSE BLOCK       { print("For-loop"); }
+  | FOR_KEYWORD  FOR_CONDITION BLOCK { print("Shortened for-loop"); }
+  | FOR_KEYWORD FOR_RANGE BLOCK      { print("For in range loop"); }
   ;
 
 FOR_CLAUSE:
@@ -300,8 +258,8 @@ FOR_CLAUSE:
 
 FOR_CONDITION: EXPRESSION ;
 FOR_RANGE:
-  Assignment | //to prevent Reduce/reduce
-  SIMPLE_IDENT_LIST COLON_EQ  RANGE_KEYWORD EXPRESSION
+  Assignment 
+  | SIMPLE_IDENT_LIST COLON_EQ  RANGE_KEYWORD EXPRESSION_NO_LIT
   ;
 
 
@@ -336,83 +294,20 @@ OPT_EXPRESSION_SWITCH:
 
 MULTIPLE_ExprCaseClause : ExprCaseClause | MULTIPLE_ExprCaseClause ExprCaseClause ;
 ExprCaseClause : ExprSwitchCase ':' STATEMENT_LIST ;
-ExprSwitchCase : CASE_KEYWORD ExpressionList | DEFAULT_KEYWORD ;
+ExprSwitchCase : CASE_KEYWORD EXPRESSIONList | DEFAULT_KEYWORD ;
 
 
-SWITCH_VALUES: 
- SWITCH_VALUES ',' RVALUE
- | RVALUE          
- ;
-
-SWITCH_CASES:
-  CASE_KEYWORD SWITCH_VALUES ':' STATEMENT_LIST   { print("Case in switch"); }
-  | SWITCH_CASES  CASE_KEYWORD SWITCH_VALUES ':' STATEMENT_LIST { print("Case in switch"); }
-  ;
-
-IF_ELSE_STATEMENT: 
-  IF_ELSE_IF
-  | IF_ELSE_IF ELSE_KEYWORD BLOCK  { print("Else condition"); } 
-  ;
-
-IF_ELSE_IF:
-  CONDITION                                              { print("Simple condition"); }  
-  | IF_ELSE_IF ELSE_KEYWORD CONDITION           { print("Else-if condition"); }
-  ;
-
-
-CONDITION : 
-  IF_KEYWORD EXPRESSION BLOCK 
-  | IF_KEYWORD SIMPLE_STATEMENT ';' EXPRESSION BLOCK
-  ;
-
-LOGICAL_EXPRESSION :
-  
-    LOGICAL_EXPRESSION AND_OPERATION LOGICAL_EXPRESSION   { print("Logical AND"); }  
-  | LOGICAL_EXPRESSION OR_OPERATION LOGICAL_EXPRESSION    { print("Logincal OR "); }  
-  //| '(' LOGICAL_EXPRESSION ')'
-  | RVALUE                  
-  ;
-
-RVALUE : 
-  VALUE %prec LOWER_THAN_RELATION  
-  | VALUE '+' RVALUE
-  | VALUE '-' RVALUE
-  | VALUE '*' RVALUE 
-  | VALUE '/' RVALUE 
-  | VALUE '%' RVALUE
-  | VALUE '|' RVALUE
-  | VALUE '^' RVALUE
-  | VALUE '&' RVALUE
-  | RVALUE GREATER_RELATION VALUE                          { print("Rvalues relation"); }  
-  | RVALUE LESS_RELATION VALUE                           { print("Rvalues relation"); }  
-  | RVALUE EQ_RELATION VALUE                             { print("Rvalues relation"); }  
-  | RVALUE EQ_LESS_RELATION VALUE                        { print("Rvalues relation"); }  
-  | RVALUE EQ_GREATER_RELATION VALUE                     { print("Rvalues relation"); }  
-  | RVALUE NOT_EQ_RELATION VALUE                         { print("Rvalues nq relation"); }  
-  | VALUE SHIFT_LEFT RVALUE
-  | VALUE SHIFT_RIGHT RVALUE
-  | NOT_OPERATION RVALUE                      { print("Denying expression"); }  
-  //| TYPE '{' INITIALIZER '}'                            
-
-  //| '&' TYPE '{' INITIALIZER '}'         
-  //| IDENTIFICATOR '{' INITIALIZER '}'                   
- // | TYPE '{' FUNCTION_CALL_ARGUMENTS '}'                
- // | IDENTIFICATOR '{' FUNCTION_CALL_ARGUMENTS '}'      
-  | ANON_FUNCTION   
-  | '(' RVALUE ')'
-  //| '&' RVALUE
-  ;
-
-VALUE:
-  BASIC_LITERAL
-  | FUNCTION_CALL
-  | FULL_IDENTIFICATOR
-  | FULL_IDENTIFICATOR ARRAY_INDEXATION
-  | '*' FULL_IDENTIFICATOR            { print("*FULL");}
-  ;
+IF_ELSE_STATEMENT :
+    IF_KEYWORD EXPRESSION_NO_LIT BLOCK                                                           { print("[]  IfStmt - if EXPRESSION BLOCK."); }
+    | IF_KEYWORD SIMPLE_STATEMENT ';' EXPRESSION_NO_LIT BLOCK                                    { print("[]  IfStmt - if SIMPLE_STATEMENT EXPRESSION BLOCK."); }
+    | IF_KEYWORD EXPRESSION_NO_LIT BLOCK ELSE_KEYWORD IF_ELSE_STATEMENT                          { print("[]  IfStmt - if EXPRESSION BLOCK else IfStmt."); }
+    | IF_KEYWORD EXPRESSION_NO_LIT BLOCK ELSE_KEYWORD BLOCK                                      { print("[]  IfStmt - if EXPRESSION BLOCK else BLOCK."); }
+    | IF_KEYWORD SIMPLE_STATEMENT ';' EXPRESSION_NO_LIT BLOCK ELSE_KEYWORD IF_ELSE_STATEMENT     { print("[]  IfStmt - if SIMPLE_STATEMENT EXPRESSION BLOCK else IfStmt."); }
+    | IF_KEYWORD SIMPLE_STATEMENT ';' EXPRESSION_NO_LIT BLOCK ELSE_KEYWORD BLOCK                 { print("[]  IfStmt - if SIMPLE_STATEMENT EXPRESSION BLOCK else BLOCK."); }
+    ;
 
 Assignment : 
-  EXPRESSION assign_op ExpressionList 
+  EXPRESSION assign_op EXPRESSIONList 
   | EXPRESSION assign_op RANGE_KEYWORD EXPRESSION 
   ;
 
@@ -424,25 +319,29 @@ assign_op :
 
 
 OPERAND:
-  LITERAL
-  | '(' EXPRESSION ')'
-  | LITERAL_TYPE
-  //| QUALIFIED_IDENT
+  LITERAL              
+  | '(' EXPRESSION ')' 
+  | LITERAL_TYPE      
   ;
 
-BASIC_LITERAL: INTEGER | STRING | FLOAT | TRUE_FALSE  | COMPLEX | NIL_KEYWORD ;
-LITERAL: BASIC_LITERAL | ANON_FUNCTION  | COMPOSITE_LITERAL;
+
+BASIC_LITERAL: INTEGER | STRING | FLOAT | TRUE_FALSE  | COMPLEX;
+LITERAL: BASIC_LITERAL | ANON_FUNCTION  ;//| COMPOSITE_LITERAL;
 
 
-COMPOSITE_LITERAL : LITERAL_TYPE LITERAL_VALUE ;
+COMPOSITE_LITERAL : 
+  LITERAL_TYPE LITERAL_VALUE 
+  | '&' COMPOSITE_LITERAL
+  | '*' COMPOSITE_LITERAL
+  ;
 
 LITERAL_TYPE:
-  STRUCT_TYPE
+  STRUCT_TYPE 
   | ARRAY_TYPE 
   | '[' DOT_DOT_DOT ']' TYPE
-  | SLICE_TYPE
+  | SLICE_TYPE 
   | MAP_TYPE 
-  | TypeName                                          // +5 REDUCE/REDUCE
+  | FULL_IDENTIFICATOR //{print("?");}                                         // +5 REDUCE/REDUCE
   //| TypeName  TypeArgs  
   ;
 LITERAL_VALUE : 
@@ -463,16 +362,18 @@ Element       : EXPRESSION | LITERAL_VALUE;
 
 
 PrimaryExpr :
-	OPERAND 
-  //|	Conversion 
+	OPERAND
 	| PrimaryExpr Selector 
 	| PrimaryExpr Index 
 	| PrimaryExpr Slice 
 	| PrimaryExpr TypeAssertion 
-	| PrimaryExpr Arguments     { print("PrimaryExpression Arguments"); }
+	| PrimaryExpr Arguments     { print("PrimaryEXPRESSION Arguments"); }
   ;
 
-Selector : '.' IDENTIFICATOR ;
+Selector : 
+  '.' FULL_IDENTIFICATOR
+  ; 
+
 Index : '[' EXPRESSION ']' ;
 Slice : '['  ':'  ']' |
         '['  ':'  EXPRESSION  ']' |
@@ -484,19 +385,15 @@ Slice : '['  ':'  ']' |
 
 TypeAssertion : '.' '(' TYPE ')' ;
 
-ExpressionList:
+EXPRESSIONList:
   EXPRESSION
-  | ExpressionList ',' EXPRESSION
+  | EXPRESSIONList ',' EXPRESSION
   ;
 
 Arguments  : 
   '(' ')'             
-  | '('   ExpressionList  ')'             
-  //| '('   TYPE    ')'
- // | '('   TYPE   ',' ExpressionList    ')'
-  | '('   ExpressionList  ArgumentsAppendix ')'             
- //| '('   TYPE   ArgumentsAppendix ')'
-  //| '('   TYPE   ',' ExpressionList   ArgumentsAppendix ')'
+  | '('   EXPRESSIONList  ')'             
+  | '('   EXPRESSIONList  ArgumentsAppendix ')'             
   ;
 
 ArgumentsAppendix:
@@ -505,12 +402,14 @@ ArgumentsAppendix:
   | DOT_DOT_DOT ','
   ;
 
-//MethodExpr: TYPE '.' IDENTIFICATOR ;
+EXPRESSION:
+  EXPRESSION_NO_LIT
+  | COMPOSITE_LITERAL
+  ;
 
-
-EXPRESSION : 
-  UnaryExpr 
-  | EXPRESSION binary_op EXPRESSION 
+EXPRESSION_NO_LIT :
+  EXPRESSION_NO_LIT binary_op UnaryExpr 
+  | UnaryExpr 
   ;
 UnaryExpr  : 
   PrimaryExpr 
@@ -524,55 +423,27 @@ binary_op  :
   | add_op           
   | mul_op          
   ;
+
+
 rel_op     : EQ_RELATION | GREATER_RELATION | LESS_RELATION | EQ_GREATER_RELATION | EQ_LESS_RELATION | NOT_EQ_RELATION ;
 mul_op     :  '/' | '%' | SHIFT_LEFT | SHIFT_RIGHT | '&';
 add_op     : '+' | '-' | NOT_OPERATION | '^' ;
 unary_op   : '+' | '-' | NOT_OPERATION | '^' | '*' | '&' | LEFT_ARROW;
 
-//Conversion : Type '(' Expression  ')' | Type '(' Expression ',' ')' ;
-
-
-
-INITIALIZER:
-  IDENTIFICATOR ':' VALUE
-  | INITIALIZER ',' IDENTIFICATOR ':' VALUE
-  ;
-
-
-ARRAY_INDEXATION:
-  '[' VALUE ']'
-  | ARRAY_INDEXATION '[' VALUE ']'
-  ;
-
-
-
-FUNCTION_CALL : 
-  TEST_CALL
-  | FUNCTION_CALL '.' TEST_CALL
-  ;
-TEST_CALL :
-  FULL_IDENTIFICATOR '(' FUNCTION_CALL_ARGUMENTS ')'   { print("Function call"); } 
-  | ANON_FUNCTION      '(' FUNCTION_CALL_ARGUMENTS ')'   { print("Anon function call"); }
-  ;
 
 FULL_IDENTIFICATOR:
-  IDENTIFICATOR
-  | FULL_IDENTIFICATOR '.' IDENTIFICATOR
-  ;
-
-FUNCTION_CALL_ARGUMENTS :
-  FUNCTION_CALL_ARGUMENTS ',' RVALUE
-  | RVALUE
-  |
+  IDENTIFICATOR 
+  | IDENTIFICATOR '.' FULL_IDENTIFICATOR
+  | '(' FULL_IDENTIFICATOR ')'
   ;
 
 SHORT_DEFINING:
-  SIMPLE_IDENT_LIST COLON_EQ ExpressionList
+  SIMPLE_IDENT_LIST COLON_EQ EXPRESSIONList 
   ;
 
 SIMPLE_IDENT_LIST:
-  IDENTIFICATOR
-  | SIMPLE_IDENT_LIST ',' IDENTIFICATOR
+  FULL_IDENTIFICATOR
+  | SIMPLE_IDENT_LIST ',' FULL_IDENTIFICATOR
   ;
 
 MULTIPLE_VARIABLE_DECLARATION:
@@ -583,7 +454,7 @@ MULTIPLE_VARIABLE_DECLARATION:
 MULTIPLE_VARIABLE_DECL_OPTION:
   VARIABLE_DECLARATION 
   | VARIABLE_DECLARATION_ASSIGNMENT
-  | SIMPLE_IDENT_LIST '=' ExpressionList
+  | SIMPLE_IDENT_LIST '=' EXPRESSIONList
   ;
 
 
@@ -592,34 +463,18 @@ VARIABLE_DECLARATION:
   ;
 
 VARIABLE_DECLARATION_ASSIGNMENT: 
-  SIMPLE_IDENT_LIST TYPE '='  ExpressionList
-  ;
-
-MULTIPLE_RVALUE:
-  MULTIPLE_RVALUE ',' RVALUE
-  | RVALUE
-  ;
-
-
-TYPEVAL:
-  TYPE
-//  | IDENTIFICATOR
+  SIMPLE_IDENT_LIST TYPE '='  EXPRESSIONList
   ;
 
 
 TYPE: 
   TYPE_LIT
-  | TypeName
+  | FULL_IDENTIFICATOR
   | '(' TYPE ')'
   ;
 
 TYPE_LIT: 
-  INT_TYPE
-  | FLOAT_TYPE
-  | COMPLEX_TYPE
-  | BOOL_TYPE
-  | STRING_TYPE
-  | ARRAY_TYPE
+  ARRAY_TYPE
   | '[' DOT_DOT_DOT ']' TYPE  
   | STRUCT_TYPE
   | POINTER_TYPE
@@ -634,12 +489,11 @@ INTERFACE_TYPE:
   INTERFACE_KEYWORD '{'  '}'                    { print("Empty interface definition"); }
   | INTERFACE_KEYWORD '{' INTERFACE_FIELDS '}'    { print("Interface definition"); }
   ;
-SLICE_TYPE :  '[' ']' TYPE ';'
-CHANNEL_TYPE:
-  CHAN_KEYWORD  TYPE 
-  | CHAN_KEYWORD LEFT_ARROW  TYPE
-  | LEFT_ARROW CHAN_KEYWORD  TYPE 
+SLICE_TYPE :  
+  '[' ']' TYPE ';'
   ;
+
+
 
 POINTER_TYPE : '*' TYPE;
 FUNCTION_TYPE : FUNC_KEYWORD SIGNATURE ;
@@ -655,8 +509,6 @@ MULTIPLE_IDENT:
   FULL_IDENTIFICATOR 
   | MULTIPLE_IDENT ',' FULL_IDENTIFICATOR 
   ;
-
-
 
 %%
 
