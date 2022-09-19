@@ -270,7 +270,25 @@ DECLARATION:
   | CONST_KEYWORD VARIABLE_DECLARATION_ASSIGNMENT       { print("Declaration (with assignment) of constant ");  }
   //| SHORT_DEFINING                                      { print("Short defining");                              }
   | VAR_KEYWORD SIMPLE_IDENT_LIST '=' EXPRESSION         
+  | CONST_DECL
   ;
+
+
+CONST_DECL: 
+  CONST_KEYWORD CONST_SPEC
+  | CONST_KEYWORD '(' ')'
+  | CONST_KEYWORD '(' MULTIPLE_CONST_SPEC ')'
+  ; 
+
+CONST_SPEC :
+  SIMPLE_IDENT_LIST
+  | SIMPLE_IDENT_LIST '=' EXPRESSIONList
+  ;
+
+MULTIPLE_CONST_SPEC :
+  MULTIPLE_CONST_SPEC CONST_SPEC ';'
+  | CONST_SPEC ';'
+  ;  
 
 
 SWITCH :
