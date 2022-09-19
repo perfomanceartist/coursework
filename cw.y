@@ -207,8 +207,8 @@ STATEMENT :
   | BREAK
   | CONTINUE
   | RETURN 
-  | DEFER_KEYWORD EXPRESSION  { print("Defer function call");}
-  | GO_KEYWORD  EXPRESSION     { print("Starting goroutine"); }
+  | DEFER_KEYWORD EXPRESSION_NO_LIT  { print("Defer function call");}
+  | GO_KEYWORD  EXPRESSION_NO_LIT     { print("Starting goroutine"); }
   ;
 
 LABELED_STMT: IDENTIFICATOR ':' STATEMENT ;
@@ -221,7 +221,7 @@ SIMPLE_STATEMENT:
   | SHORT_DEFINING 
   ;
 
-INC_DEC_STMT: EXPRESSION INCREMENT | EXPRESSION DECREMENT ;
+INC_DEC_STMT: EXPRESSION_NO_LIT INCREMENT | EXPRESSION_NO_LIT DECREMENT ;
 SEND_STMT: EXPRESSION LEFT_ARROW EXPRESSION ;
 
 
@@ -249,14 +249,14 @@ FOR :
 FOR_CLAUSE:
   ';' ';'
   | ';'  ';' SIMPLE_STATEMENT
-  | ';' EXPRESSION ';' 
-  | ';' EXPRESSION ';' SIMPLE_STATEMENT
+  | ';' EXPRESSION_NO_LIT ';' 
+  | ';' EXPRESSION_NO_LIT ';' SIMPLE_STATEMENT
   | SIMPLE_STATEMENT ';'  ';' 
   | SIMPLE_STATEMENT ';'  ';' SIMPLE_STATEMENT
-  | SIMPLE_STATEMENT ';' EXPRESSION ';' 
-  | SIMPLE_STATEMENT ';' EXPRESSION ';' SIMPLE_STATEMENT
+  | SIMPLE_STATEMENT ';' EXPRESSION_NO_LIT ';' 
+  | SIMPLE_STATEMENT ';' EXPRESSION_NO_LIT';' SIMPLE_STATEMENT
 
-FOR_CONDITION: EXPRESSION ;
+FOR_CONDITION: EXPRESSION_NO_LIT ;
 FOR_RANGE:
   Assignment 
   | SIMPLE_IDENT_LIST COLON_EQ  RANGE_KEYWORD EXPRESSION_NO_LIT
@@ -325,8 +325,8 @@ IF_ELSE_STATEMENT :
     ;
 
 Assignment : 
-  EXPRESSION assign_op EXPRESSIONList 
-  | EXPRESSION assign_op RANGE_KEYWORD EXPRESSION 
+  EXPRESSION_NO_LIT assign_op EXPRESSIONList 
+  | EXPRESSION_NO_LIT assign_op RANGE_KEYWORD EXPRESSION 
   ;
 
 assign_op : 
@@ -349,18 +349,21 @@ LITERAL: BASIC_LITERAL | ANON_FUNCTION  ;//| COMPOSITE_LITERAL;
 
 COMPOSITE_LITERAL : 
   LITERAL_TYPE LITERAL_VALUE 
-  | '&' COMPOSITE_LITERAL
-  | '*' COMPOSITE_LITERAL
+  //| '&' COMPOSITE_LITERAL
+  //| '*' COMPOSITE_LITERAL
   ;
 
 LITERAL_TYPE:
   STRUCT_TYPE 
   | ARRAY_TYPE 
   | '[' DOT_DOT_DOT ']' TYPE
+  | '[' ']' TYPE
+  | '*' LITERAL_TYPE
+  | '&' LITERAL_TYPE    { print("&-ing LiteralType"); }
   | SLICE_TYPE 
   | MAP_TYPE 
-  | FULL_IDENTIFICATOR //{print("?");}                                         // +5 REDUCE/REDUCE
-  //| TypeName  TypeArgs  
+  | FULL_IDENTIFICATOR {print("FULL in Literal TYPE");}                                         
+   
   ;
 LITERAL_VALUE : 
   '{'  '}' 
@@ -372,8 +375,8 @@ ElementList   :
   | ElementList ',' KeyedElement
   ;
 KeyedElement  : 
-  Key ':' Element  |
-   Element 
+  Key ':' Element   { print("KeyedElement");}
+  | Element        { print("KeyedElement");}
   ;
 Key           : EXPRESSION | LITERAL_VALUE;
 Element       : EXPRESSION | LITERAL_VALUE;
@@ -392,13 +395,13 @@ Selector :
   '.' FULL_IDENTIFICATOR
   ; 
 
-Index : '[' EXPRESSION ']' ;
+Index : '[' EXPRESSION_NO_LIT ']' ;
 Slice : '['  ':'  ']' |
-        '['  ':'  EXPRESSION  ']' |
-        '['  EXPRESSION  ':'  ']' |
-        '['  EXPRESSION  ':'  EXPRESSION  ']' |
-        '['  ':' EXPRESSION ':' EXPRESSION ']' |
-        '['  EXPRESSION  ':' EXPRESSION ':' EXPRESSION ']' 
+        '['  ':'  EXPRESSION_NO_LIT  ']' |
+        '['  EXPRESSION_NO_LIT  ':'  ']' |
+        '['  EXPRESSION_NO_LIT  ':'  EXPRESSION_NO_LIT  ']' |
+        '['  ':' EXPRESSION_NO_LIT ':' EXPRESSION_NO_LIT ']' |
+        '['  EXPRESSION_NO_LIT  ':' EXPRESSION_NO_LIT ':' EXPRESSION_NO_LIT ']' 
       ;
 
 TypeAssertion : '.' '(' TYPE ')' ;
@@ -521,7 +524,7 @@ STRUCT_TYPE:
   | STRUCT_KEYWORD '{' STRUCT_FIELDS '}'          { print("Struct definition"); }
   ;
 
-ARRAY_TYPE : '[' EXPRESSION ']' TYPE ;
+ARRAY_TYPE : '[' EXPRESSION_NO_LIT ']' TYPE ;
 MAP_TYPE   : MAP_KEYWORD '[' TYPE ']' TYPE ;
 MULTIPLE_IDENT: 
   FULL_IDENTIFICATOR 
