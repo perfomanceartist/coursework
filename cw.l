@@ -94,6 +94,8 @@ false						{ ins_token = 1; return TRUE_FALSE;   	}
 [-]?[0-9]+[[\+][0-9]+[i]]? 	{ ins_token = 1;return COMPLEX; 		}		
 \"(\\.|[^"\\])*\"			{ ins_token = 1;return STRING; 			}
 
+\`[^\`]*\`					{ ins_token = 1;return STRING; 			}
+
 [A-Za-z_]+[A-Za-z_0-9]* 	{ ins_token = 1; return IDENTIFICATOR;  }
 
 := 							{ ins_token = 0; return COLON_EQ;		}
