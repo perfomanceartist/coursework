@@ -244,6 +244,7 @@ FOR :
   FOR_KEYWORD FOR_CLAUSE BLOCK       { print("For-loop"); }
   | FOR_KEYWORD  FOR_CONDITION BLOCK { print("Shortened for-loop"); }
   | FOR_KEYWORD FOR_RANGE BLOCK      { print("For in range loop"); }
+  | FOR_KEYWORD BLOCK                { print("Infinite loop"); }
   ;
 
 FOR_CLAUSE:
@@ -316,12 +317,12 @@ ExprSwitchCase : CASE_KEYWORD EXPRESSIONList | DEFAULT_KEYWORD ;
 
 
 IF_ELSE_STATEMENT :
-    IF_KEYWORD EXPRESSION_NO_LIT BLOCK                                                           { print("[]  IfStmt - if EXPRESSION BLOCK."); }
-    | IF_KEYWORD SIMPLE_STATEMENT ';' EXPRESSION_NO_LIT BLOCK                                    { print("[]  IfStmt - if SIMPLE_STATEMENT EXPRESSION BLOCK."); }
-    | IF_KEYWORD EXPRESSION_NO_LIT BLOCK ELSE_KEYWORD IF_ELSE_STATEMENT                          { print("[]  IfStmt - if EXPRESSION BLOCK else IfStmt."); }
-    | IF_KEYWORD EXPRESSION_NO_LIT BLOCK ELSE_KEYWORD BLOCK                                      { print("[]  IfStmt - if EXPRESSION BLOCK else BLOCK."); }
-    | IF_KEYWORD SIMPLE_STATEMENT ';' EXPRESSION_NO_LIT BLOCK ELSE_KEYWORD IF_ELSE_STATEMENT     { print("[]  IfStmt - if SIMPLE_STATEMENT EXPRESSION BLOCK else IfStmt."); }
-    | IF_KEYWORD SIMPLE_STATEMENT ';' EXPRESSION_NO_LIT BLOCK ELSE_KEYWORD BLOCK                 { print("[]  IfStmt - if SIMPLE_STATEMENT EXPRESSION BLOCK else BLOCK."); }
+    IF_KEYWORD EXPRESSION_NO_LIT BLOCK                                                           { print("IF EXPRESSION"); }
+    | IF_KEYWORD SIMPLE_STATEMENT ';' EXPRESSION_NO_LIT BLOCK                                   
+    | IF_KEYWORD EXPRESSION_NO_LIT BLOCK ELSE_KEYWORD IF_ELSE_STATEMENT                          
+    | IF_KEYWORD EXPRESSION_NO_LIT BLOCK ELSE_KEYWORD BLOCK                                      { print("IF_ELSE EXPRESSION"); }
+    | IF_KEYWORD SIMPLE_STATEMENT ';' EXPRESSION_NO_LIT BLOCK ELSE_KEYWORD IF_ELSE_STATEMENT     
+    | IF_KEYWORD SIMPLE_STATEMENT ';' EXPRESSION_NO_LIT BLOCK ELSE_KEYWORD BLOCK                 
     ;
 
 Assignment : 
@@ -339,7 +340,7 @@ assign_op :
 OPERAND:
   LITERAL              
   | '(' EXPRESSION ')' 
-  | LITERAL_TYPE      
+  | LITERAL_TYPE      { print("Literal_Type in OPERAND");}
   ;
 
 
@@ -358,8 +359,8 @@ LITERAL_TYPE:
   | ARRAY_TYPE 
   | '[' DOT_DOT_DOT ']' TYPE
   | '[' ']' TYPE
-  | '*' LITERAL_TYPE
-  | '&' LITERAL_TYPE    { print("&-ing LiteralType"); }
+  //| '*' FULL_IDENTIFICATOR
+  //| '&' FULL_IDENTIFICATOR    { print("&-ing LiteralType"); }
   | SLICE_TYPE 
   | MAP_TYPE 
   | FULL_IDENTIFICATOR {print("FULL in Literal TYPE");}                                         
@@ -383,12 +384,12 @@ Element       : EXPRESSION | LITERAL_VALUE;
 
 
 PrimaryExpr :
-	OPERAND
-	| PrimaryExpr Selector 
-	| PrimaryExpr Index 
-	| PrimaryExpr Slice 
-	| PrimaryExpr TypeAssertion 
-	| PrimaryExpr Arguments     { print("PrimaryEXPRESSION Arguments"); }
+  OPERAND
+  | PrimaryExpr Selector      { print("PrimaryEXPR selector");}
+  | PrimaryExpr Index 
+  | PrimaryExpr Slice 
+  | PrimaryExpr TypeAssertion 
+  | PrimaryExpr Arguments     { print("PrimaryEXPRESSION Arguments"); }
   ;
 
 Selector : 
@@ -426,6 +427,7 @@ ArgumentsAppendix:
 EXPRESSION:
   EXPRESSION_NO_LIT
   | COMPOSITE_LITERAL
+  | address_op EXPRESSION
   ;
 
 EXPRESSION_NO_LIT :
@@ -449,7 +451,8 @@ binary_op  :
 rel_op     : EQ_RELATION | GREATER_RELATION | LESS_RELATION | EQ_GREATER_RELATION | EQ_LESS_RELATION | NOT_EQ_RELATION ;
 mul_op     :  '/' | '%' | SHIFT_LEFT | SHIFT_RIGHT | '&';
 add_op     : '+' | '-' | NOT_OPERATION | '^' ;
-unary_op   : '+' | '-' | NOT_OPERATION | '^' | '*' | '&' | LEFT_ARROW;
+unary_op   : '+' | '-' | NOT_OPERATION | '^' | address_op | LEFT_ARROW;
+address_op : '*' | '&' ;
 
 
 FULL_IDENTIFICATOR:
